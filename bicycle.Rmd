@@ -1,0 +1,1001 @@
+---
+title: "A bicycle frame"
+output:
+  html_document:
+    df_print: paged
+---
+
+### Introduction
+
+```{r toolkit}
+library(dplyr)
+library(purrr)
+library(tibble)
+library(ggplot2)
+library(ggforce)
+```
+
+
+This is an attempt to code up Chapter 4 of [Lugged Bicycle Frame Construction, 3rd Ed.](https://www.amazon.com/dp/1492232645?psc=1&ref=ppx_yo2_dt_b_product_details) by Marc-Andre R. Chimonas.
+
+Abbreviations:
+
+  - ST: seat tube
+  - DT: down tube
+  - TT: top tube
+  - HT: head tube
+  - SS: seat stay(s)
+  - CS: chain stay(s)
+  - BB: bottom bracket
+  - F: fork
+  - DO: dropout
+  
+Frame Angles:
+
+  - ST-DT: seat tube - down tube
+  - ST-TT: seat tube - top tube
+  - TT-HT: top tube - head tube
+  - DT-HT: down tube - head tube
+  - ST-CS: seat tube - chain stay
+  - CS-SS: chain stay - seat stay
+  - ST-SS: seat tube - seat stay
+  
+Other measurements:
+
+ - W: wheelbase -- the distance between centers of the rear (CS) and front (F) dropouts
+ - D: bottom bracket drop -- height of the center of DO - height of the center of BB
+ - FC: front center -- distance between center of BB and center of fork DO
+ - seat and head angle: angles that ST and HT make with the flat ground; they are the same value if ST and HT are parallel, as in the classic design.
+ - TT slope: 0&deg; in the classic design, 6&deg; in the slant-six design.
+ 
+A bike frame has to have a certain shape, so some of the measurements are going to depend on others. So designing a frame can be thought of as a function that accepts certain inputs and returns some outputs, with some constraints that must be met for the inputs to be valid.
+
+Inputs:
+
+ - ST length
+ - TT length
+ - four angles of the front triangle, which must add up to 360&deg; ("front triangle" is a misnomer; it's a quadrilateral bound by the TT, ST, DT and HT read in counterclockwise order)
+ - F crown-to-axle length
+ - F rake
+ - CS length
+ - rim and tire size
+ - CS-DT angle
+ - crank length.
+ 
+ Outputs: 
+
+ - HT length
+ - DT length
+ - BB drop, height
+ - FC
+ - toe overlap
+ - standover height and clearance
+ - head and seat angles
+ - wheelbase
+ - fork trail
+ - TT slope 
+ - SS length
+ - SS-CS angle
+ - SS-ST angle.
+ 
+This main function will be a wrapper around a bunch of smaller, convenience functions that will do some trigonometric calculations.
+
+### One way to do this
+
+We can start at the bottom bracket and we grow the tubes from there, one by one, clockwise, starting with the chain stay. The BB drop will determine the angle between the CS and the vertical. The CS, an imaginary vertical line that goes through the BB, and an imaginary horizontal line that goes through the rear DO make a skinny right triangle with the CS serving as the hypotenuse. If we know the BB drop and the CS length, we can derive the length of the horizontal leg with help from Pythagoras.
+
+A similar right triangle is formed with the seat tube as a hypotenuse and its vertical and horizontal projections as its legs. We can derive their lengths using trigonometric functions if we know the seat tube angle. The chain stay simply connects the two triangles. Its length cannot be an input. Instead, it must be derived. But it too can be thought of as the hypotenuse of the right triangle formed by its two projections. In fact, all the tubes can be modeled this way.
+
+If you're going to start at the BB shell, you might as well infer the BB drop from the BB shell angles. Lugged BB shells come with 3 angles specified: 
+
+ - CS-ST angle
+ - ST-DT angle
+ - angle between chain stays
+ 
+The third will matter for deriving the length of the chain stay projection, but very little. Let's see how we might get to the BB drop from the CS-ST angle, a ST angle, and a CS length:
+
+```{r helpers}
+get_bb_drop <- function(cs_st_angle, 
+                        st_angle, 
+                        cs_length, 
+                        angle_btw_css) {
+  # remember, this is a 2d projection of the bike frame: its
+  # shadow as if it were lying on the ground with the sun at noon.
+  # so the chain stay sticks out from the ground starting at the 
+  # BB toward the DO, at half the angle between the chains stays.
+  # we want the length of its shadow:
+  cs_shadow <- cs_length * cos((angle_btw_css / 2) * pi / 180)  
+  
+  # derived from here (sketch it out on paper)
+  # cs_angle <- 90 - (cs_st_angle + (90 - st_angle))
+  cs_angle <- st_angle - cs_st_angle
+  bb_drop <- cs_shadow * sin(cs_angle * pi / 180)
+  bb_drop
+}
+
+# dt_angle + ht_angle = ht_dt_angle, useful later
+get_dt_angle <- function(st_dt_angle, st_angle) {
+  # derived from here (sketch it out on paper)
+  (90 - st_angle) + (90 - st_dt_angle)
+}
+
+get_bb_tt_diagonal <- function(st_length, 
+                               tt_length,
+                               st_angle, 
+                               tt_angle) {
+  st_tt_angle <- st_angle + tt_angle
+  sqrt(st_length^2 + 
+         tt_length^2 - 
+         2 * st_length * tt_length * cos(st_tt_angle * pi / 180))
+}
+```
+
+Here's the bike frame, almost done:
+
+```{r main_halves_of_the_frame}
+get_front_triangle_dims <- function(st_length = 500, 
+                                    tt_length = 500, 
+                                    st_angle = 71, 
+                                    tt_angle = 0, 
+                                    ht_angle = 71, 
+                                    st_dt_angle = 60) {
+  tt_ht_angle <- 180 - (ht_angle + tt_angle)
+  dt_angle <- get_dt_angle(st_dt_angle, st_angle)
+  bb_tt_diagonal <- get_bb_tt_diagonal(st_length, tt_length, st_angle, tt_angle)
+  tt_diagonal_angle <- acos(-(st_length^2 - (tt_length^2 + bb_tt_diagonal^2))/(2*tt_length*bb_tt_diagonal))*180/pi
+  st_diagonal_angle <- acos(-(tt_length^2 - (st_length^2 + bb_tt_diagonal^2))/(2*st_length*bb_tt_diagonal))*180/pi
+  diagonal_dt_angle <- st_dt_angle - st_diagonal_angle
+  diagonal_ht_angle <- tt_ht_angle - tt_diagonal_angle
+  ht_dt_angle <- dt_angle + ht_angle
+  
+  dt_length <- sin(diagonal_ht_angle * pi / 180) * bb_tt_diagonal / sin(ht_dt_angle * pi / 180)
+  dt_triangle <- c(length = dt_length, 
+                   vertical_projection = sin(dt_angle * pi / 180) * dt_length, 
+                   horizontal_projection = cos(dt_angle * pi / 180) * dt_length)
+  
+  ht_length <- sin(diagonal_dt_angle * pi / 180) * bb_tt_diagonal / sin(ht_dt_angle * pi / 180)
+  ht_triangle <- c(length = ht_length, 
+                   vertical_projection = sin(ht_angle * pi / 180) * ht_length, 
+                   horizontal_projection = cos(ht_angle * pi / 180) * ht_length)
+  
+  st_triangle <- c(length = st_length, 
+                   vertical_projection = sin(st_angle * pi / 180) * st_length, 
+                   horizontal_projection = cos(st_angle * pi / 180) * st_length)
+  
+  tt_triangle <- c(length = tt_length, 
+                   vertical_projection = sin(tt_angle * pi / 180) * tt_length, 
+                   horizontal_projection = cos(tt_angle * pi / 180) * tt_length)
+  
+  tibble(st_triangle, dt_triangle, ht_triangle, tt_triangle)
+}
+
+get_rear_triangle_dims <- function(st_length = 500,
+                                   cs_length = 450, 
+                                   st_angle = 71, 
+                                   cs_st_angle = 61, 
+                                   angle_btw_css = 14) {
+  # remember, this is a 2d projection of the bike frame: its
+  # shadow as if it were lying on the ground with the sun at noon.
+  # so the chain stay sticks out from the ground starting at the 
+  # BB toward the DO, at half the angle between the chains stays.
+  # we want the length of its shadow:
+  cs_shadow <- cs_length * cos((angle_btw_css / 2) * pi / 180)
+  
+  # derived from here (sketch it out on paper)
+  # cs_angle <- 90 - (cs_st_angle + (90 - st_angle))
+  cs_angle <- st_angle - cs_st_angle  
+  
+  cs_triangle <- c(length = cs_shadow, 
+                   vertical_projection = cs_shadow * sin(cs_angle * pi / 180), 
+                   horizontal_projection = cs_shadow * cos(cs_angle * pi / 180))
+  
+  st_triangle <- c(length = st_length, 
+                   vertical_projection = st_length * sin(st_angle * pi / 180), 
+                   horizontal_projection = st_length * cos(st_angle * pi / 180))
+  
+  ss_hp <- cs_triangle['horizontal_projection'] - st_triangle['horizontal_projection']
+  ss_vp <- st_triangle['vertical_projection'] - cs_triangle['vertical_projection']
+  ss_shadow <- sqrt(ss_vp^2 + ss_hp^2)
+  ss_triangle <- c(length = ss_shadow, 
+                   vertical_projection = ss_vp, 
+                   horizontal_projection = ss_hp)
+  
+  tibble(cs_triangle, st_triangle, ss_triangle)
+}
+
+wrap_frame_dims <- function(st_length = 500, 
+                            tt_length = 500, 
+                            st_angle = 71, 
+                            tt_angle = 0, 
+                            ht_angle = 71, 
+                            st_dt_angle = 60, 
+                            cs_length = 450, 
+                            cs_st_angle = 59, 
+                            angle_btw_css = 14) {
+  front_triangle <- get_front_triangle_dims(st_length = st_length, 
+                                            tt_length = tt_length, 
+                                            st_angle = st_angle, 
+                                            tt_angle = tt_angle, 
+                                            ht_angle = ht_angle,
+                                            st_dt_angle = st_dt_angle)
+  rear_triangle <- get_rear_triangle_dims(st_length = st_length, 
+                                          cs_length = cs_length,
+                                          st_angle = st_angle, 
+                                          cs_st_angle = cs_st_angle, 
+                                          angle_btw_css = angle_btw_css)
+  df <- front_triangle %>% 
+    inner_join(rear_triangle)
+  for (i in colnames(rear_triangle)) {
+    names(df[[i]]) <- names(df$cs_triangle)
+  }
+  df
+}
+
+draw_the_bicycle <- function(df, 
+                             wheel_diameter = 622, 
+                             i = 500) {
+  # start with the bottom bracket
+  bb_center <- tibble(x = i, 
+                      y = wheel_diameter / 2)
+  bb_plot <- bb_center %>% 
+    ggplot(aes(x = x, y = y)) + 
+    geom_point(alpha = .5)
+  
+  # first, the easy parts: add the 3 tubes that
+  # go into the bottom bracket. it's the same
+  # recipe for all three because they form 
+  # triangles with a common corner in the BB.
+  # all three are right triangles whose legs -- 
+  # a horizontal projection (hp) and a vertical
+  # projection (vp) of the tube of interest --
+  # are parallel to the axes. so you draw the
+  # tubes between the (x, y) coordinates of 
+  # the projections shifted by i from x = 0
+  # and by wheel_diameter / 2 from y = 0
+  
+  # add the chain stay CS:
+  cs_plot <- bb_plot + 
+    geom_segment(aes(x = i - cs_triangle['horizontal_projection'], 
+                     y = wheel_diameter / 2 + cs_triangle['vertical_projection'], 
+                     xend = i, 
+                     yend = wheel_diameter / 2), 
+                 data = df)
+  
+  # add the seat tube ST:
+  st_plot <- cs_plot + 
+    geom_segment(aes(x = i - st_triangle['horizontal_projection'], 
+                     y = wheel_diameter / 2 + st_triangle['vertical_projection'], 
+                     xend = i, 
+                     yend = wheel_diameter / 2), 
+                 data = df)
+  
+  # add the down tube DT. notice it points forward, so 
+  # move the x coordinate of its higher end to the right
+  # with a + sign, not to the left as with the CS and ST:
+  dt_plot <- st_plot + 
+    geom_segment(aes(x = i + dt_triangle['horizontal_projection'], 
+                     y = wheel_diameter / 2 + dt_triangle['vertical_projection'], 
+                     xend = i, 
+                     yend = wheel_diameter / 2), 
+                 data = df)  
+  
+  # add the seat stay SS. no need to draw its
+  # projections because the intersecting CS hp
+  # and ST vp will do the same job. in fact, 
+  # there's no need for any of the data in the 
+  # ss_triangle column because we have already
+  # drawn the ends of the segment when we drew
+  # the CS and the ST, so we can just join them.
+  # but using the ss_triangle data is a good
+  # way to check that the math is correct so far:
+  # if the seat stay that start at the top of the
+  # seat tube ends at the dropout exacly, then
+  # all is well and we got the SS length right.
+  ss_plot <- dt_plot + 
+    geom_segment(aes(x = i - 
+                       st_triangle['horizontal_projection'], 
+                     y = wheel_diameter / 2 + 
+                       st_triangle['vertical_projection'], 
+                     xend = i - 
+                       st_triangle['horizontal_projection'] - 
+                       ss_triangle['horizontal_projection'], 
+                     yend = wheel_diameter / 2 + 
+                       st_triangle['vertical_projection'] - 
+                       ss_triangle['vertical_projection']), 
+                 data = df)
+  
+  # add the top tube TT
+  tt_plot <- ss_plot + 
+    geom_segment(aes(x = i - 
+                       st_triangle['horizontal_projection'], 
+                     y = wheel_diameter / 2 + 
+                       st_triangle['vertical_projection'], 
+                     xend = i - 
+                       st_triangle['horizontal_projection'] + 
+                       tt_triangle['horizontal_projection'], 
+                     yend = wheel_diameter / 2 + 
+                       st_triangle['vertical_projection'] + 
+                       tt_triangle['vertical_projection']), 
+                 data = df)
+  
+  # add the head tube HT. like with the seat stay SS, we
+  # can take a shortcut: the ends of this segment are drawn
+  # already. they are the loose ends of the TT and DT. but
+  # we'll use ht_triangle to make sure we got the dims right.
+  ht_plot <- tt_plot + 
+    geom_segment(aes(x = i - 
+                       st_triangle['horizontal_projection'] + 
+                       tt_triangle['horizontal_projection'], 
+                     y = wheel_diameter / 2 + 
+                       st_triangle['vertical_projection'] + 
+                       tt_triangle['vertical_projection'], 
+                     xend = i - 
+                       st_triangle['horizontal_projection'] + 
+                       tt_triangle['horizontal_projection'] + 
+                       ht_triangle['horizontal_projection'], 
+                     yend = wheel_diameter / 2 + 
+                       st_triangle['vertical_projection'] + 
+                       tt_triangle['vertical_projection'] - 
+                       ht_triangle['vertical_projection']), 
+                 data = df)  
+  
+  ht_plot
+}
+```
+
+Let's sketch out a slant-six frame, that is one with a top tube that has a 6-degree slope:
+
+```{r frame_example}
+df_slantsix <- wrap_frame_dims(tt_angle = 6, 
+                               st_dt_angle = 58, 
+                               cs_st_angle = 62)
+```
+
+Here's what that looks like:
+
+```{r show_frame_example, fig.show='asis', fig.asp = 1, fig.width = 4}
+df_slantsix %>% 
+  draw_the_bicycle()
+```
+
+### Adding a fork
+
+Given a wheel diameter, the rear DO will sit in space at half that height, and the front DO will have to sit at the same height if the wheels are the same size. So think of the CS as pivoting from the rear DO. Where does the BB end up, and what happens to the DT? The ST pushes the BB down, so at a given ST length, a steeper ST angle produces both a deeper BB drop and a slacker DT angle, which then produces a longer HT. That HT length can only extend down toward the wheel because the top of the HT is fixed by the TT length and angle. As the HT grows longer, the room for a fork that is long enough to clear the front wheel decreases. So the total CS-DT angle, which is the sum of the CS-ST and the ST-DT angles, can only grow so much before you run out of room for the front wheel, or else you have to give the fork a huge rake.
+
+This matters because our bike frame schematic so far is missing a piece at the bottom of the HT. The fork crown cannot come up all the way to where the DT and the HT meet, so the HT has got to be longer than what's been drawn so far. How much longer? That's what we'll calculate next. It must be long enough to accommodate the fork we pick, which will have a rake and a crown-to-axle length given. This crown-to-axle length needs to be larger than the wheel radius (with the inflated tire on) but it also has to be shorter than the adjusted fork length shown in the first row of the `af_triangle` column in the data frame drawn by `wrap_frame_stats()`. That length, in turn, will vary depending on your choices for the `st_dt_angle` and `cs_st_angle` arguments, for the reason detailed in the first paragraph. So, when you pick a value for the `fork_cta_length` argument in the function `find_ht_extension_and_add_true_fork()` defined below, make sure that it is lower than what you see in the first row of the `af_triangle` column added to the data frame drawn by `wrap_frame_dims()` when you run `add_steering_axis()` defined below. That's the first thing we'll have to check when picking a fork for the bike.
+
+```{r add_a_fork}
+# Got to get the fork correction: the fork crown meets the
+# head tube below the point where the HT meets the DT. The
+# difference is H, must be added to HT for true HT length.
+# For that, first, let's draw the steering axis down to 
+# where it meets the fork rake line, which is perpendicular
+# to it and ends at the fork dropout
+add_steering_axis <- function(frame_dims, 
+                              fork_rake = 45) {
+  # frame_stats is the df you get from combining
+  # the front and rear triangle stats. recover the HT angle:
+  ht_hp <- frame_dims$ht_triangle[['horizontal_projection']]
+  ht_vp <- frame_dims$ht_triangle[['vertical_projection']]
+  ht_angle <- 90 - atan(ht_hp/ht_vp)*180/pi
+  
+  # step 1: project steering axis SA from HT out to DO height
+  sa_vp <- frame_dims$dt_triangle[['vertical_projection']] - 
+    frame_dims$cs_triangle[['vertical_projection']]
+  sa_hp <- sa_vp / tan(ht_angle * pi / 180)
+  sa_length <- sa_vp / sin(ht_angle * pi / 180)
+  
+  # step 2: extend sa_hp to the front DO by a distance
+  # equal to the hypotenuse of the right triangle formed
+  # by the fork rake and an extension of the steering
+  # axis down to the point where it makes a right angle
+  # with the fork rake line. This triangle is similar 
+  # to the triangle whose hypotenuse is the SA. This
+  # means that the length of the hypotenuse is proportional
+  # to sa_length, as in
+  af_hp_ext <- sa_length * fork_rake / sa_vp
+  af_hp <- sa_hp + af_hp_ext
+  # adjusted fork length from Pythagoras:
+  af_length <- sqrt(sa_vp^2 + af_hp^2)  
+  
+  # step 3: extend sa_length down to where it needs
+  # to be to make a 90-degree angle with the rake line.
+  # the short leg of the right triangle with the 
+  # hypotenuse equal to the horizontal distance 
+  # af_hp_ext is equal to
+  af_l1 <- fork_rake * sa_hp / sa_vp
+  
+  # the long leg is just the rake. If I am right,
+  # then the sum of the two squared is equal to 
+  # af_length^2 so Pythagoras should be TRUE but
+  # for rounding -- so the ratio below should be ~ 1:
+  message(paste('Pythagoras!', (af_l1^2 + fork_rake^2) / (af_hp_ext)^2))
+  
+  # now set up triangles for the fork rake
+  # and for the SA extension. first, recover
+  # the head tube angle from the SA projections
+  ht_angle <- 90 - atan(sa_hp/sa_vp)*180/pi
+  sa_ext_triangle <- c(length = af_l1, 
+                       vertical_projection = sin(ht_angle * pi / 180) * af_l1, 
+                       horizontal_projection = cos(ht_angle * pi / 180) * af_l1)
+  rake_triangle <- c(length = fork_rake, 
+                     vertical_projection = cos(ht_angle * pi / 180) * fork_rake, 
+                     horizontal_projection = sin(ht_angle * pi / 180) * fork_rake)
+  
+  frame_dims <- frame_dims %>% 
+    add_column(sa_triangle = c(length = sa_length, 
+                               vertical_projection = sa_vp, 
+                               horizontal_projection = sa_hp)) %>% 
+    add_column(af_triangle = c(length = af_length, 
+                               vertical_projection = sa_vp, 
+                               horizontal_projection = af_hp)) %>% 
+    add_column(sa_ext_triangle = sa_ext_triangle, 
+               rake_triangle = rake_triangle)
+  frame_dims  
+}
+
+find_ht_extension_and_add_true_fork <- function(df,
+                                                fork_cta_length = 390) {
+  stopifnot(fork_cta_length < df$af_triangle['length'])
+  # the right triangle whose long leg is the SA + SA_ext
+  # and short leg is the fork rake has a hypotenuse that
+  # goes from the point where HT meets DT to the right
+  # end of the fork rake. that hypotenuse is the adjusted 
+  # fork af, and the length of that is h as shown below, 
+  # after computing the length of the long leg as a:
+  fork_rake <- df$rake_triangle[['length']]
+  a <- df$sa_triangle[['length']] + df$sa_ext_triangle[['length']]
+  h <- sqrt(a^2 + fork_rake^2)
+  
+  # but we already have the af length in df, so
+  # we can check our math for deriving h above:
+  message(paste('h is af', h / df$af_triangle[['length']]))
+  
+  # now, some algebra. let's call the fork rake r. 
+  # inside the right triangle described above, with 
+  # hypotenuse h, long leg a and short leg r, you
+  # can draw another right triangle with the same
+  # short leg r and a long leg that is a little shorter 
+  # than a defined above. We'll call it a - x for now. 
+  # The hypotenuse of this second right triangle is the 
+  # `fork_cta_length` so we'll call it f.
+  # The difference x is the extra bit of HT you need
+  # below the point where DT and HT meet, because f < h.
+  # the currently calculated df$ht_triangle['length']
+  # plus this x, to be determined, will be the true
+  # length of the head tube. Here's how we get x:
+  # - two right triangles, two Pythagoras theorems: 
+  #   h^2 = a^2 + r^2                     (1)
+  #   f^2 = (a-x)^2 + r^2                 (2)
+  # - subtract 2 from 1 and you get:
+  #   (h+f)(h-f) = (a - a + x)(a + a - x) (3)
+  # - or
+  #   x^2 - 2ax + m = 0                   (4)
+  #   where m = (h+f)(h-f)
+  # so x is one of the 2 solutions to the quad 
+  # equation (4):
+  m <- (h + fork_cta_length)*(h-fork_cta_length)
+  delta = 4*(a^2 - m)
+  x = c(a - sqrt(delta)/2, a + sqrt(delta)/2)
+  # we'll take the plausible one: it should be
+  # positive and small -- less than 50 mm.
+  ht_ext_length <- x[(x > 0) & (x < 50)]
+  ht_length <- df$ht_triangle[['length']]
+  
+  # Now add the HT extension and its projections:
+  # they should be all proportional to those of the
+  # HT, adjusted by the ratio ht_ext_length/ht_length.
+  df <- df %>% 
+    add_column(ht_ext_triangle = .$ht_triangle * ht_ext_length/ht_length)
+  
+  # now add the true rake triangle:
+  r_vp <- df$af_triangle[['vertical_projection']] - df$ht_ext_triangle[['vertical_projection']]
+  r_hp <- sqrt(fork_cta_length^2 - r_vp^2)
+  df %>% 
+    add_column(f_triangle = c(length = fork_cta_length, 
+                              vertical_projection = r_vp,
+                              horizontal_projection = r_hp))
+}
+```
+
+Now we have all the frame dimensions we need for drawing up the frame with the fork included:
+
+```{r collect_the_stats}
+df_slantsix <- wrap_frame_dims(tt_angle = 6, 
+                               st_dt_angle = 58, 
+                               cs_st_angle = 62) %>% 
+  add_steering_axis() %>% 
+  find_ht_extension_and_add_true_fork()
+```
+
+Here are a few extra drawing functions for completing the frame sketch:
+
+```{r complete_the_drawing}
+add_the_steering_axis_to_the_drawing <- function(x, 
+                                                 df, 
+                                                 wheel_diameter = 622, 
+                                                 i = 500, 
+                                                 c = 'SA') {
+  # We start at the bottom of the head tube HT
+  # (same as the top of the down tube DT, easier)
+  # and draw the steering axis down to the height
+  # of the dropouts first.
+  sa_check <- x + 
+    geom_segment(aes(x = i + 
+                       dt_triangle['horizontal_projection'], 
+                     y = wheel_diameter / 2 + 
+                       dt_triangle['vertical_projection'], 
+                     xend = i + 
+                       dt_triangle['horizontal_projection'] + 
+                       sa_triangle['horizontal_projection'], 
+                     yend = wheel_diameter / 2 + 
+                       dt_triangle['vertical_projection'] -
+                       sa_triangle['vertical_projection'], 
+                     colour = c), 
+                 alpha = 0.1,
+                 data = df)
+  
+  # Now we'll add the steering axis extension
+  sa_ext <- sa_check + 
+    geom_segment(aes(x = i + 
+                       dt_triangle['horizontal_projection'] + 
+                       sa_triangle['horizontal_projection'], 
+                     y = wheel_diameter / 2 + 
+                       dt_triangle['vertical_projection'] -
+                       sa_triangle['vertical_projection'], 
+                     xend = i + 
+                       dt_triangle['horizontal_projection'] + 
+                       sa_triangle['horizontal_projection'] + 
+                       sa_ext_triangle['horizontal_projection'], 
+                     yend = wheel_diameter / 2 + 
+                       dt_triangle['vertical_projection'] -
+                       sa_triangle['vertical_projection'] - 
+                       sa_ext_triangle['vertical_projection'], 
+                     colour = c), 
+                 alpha = 0.1,
+                 data = df)
+  sa_ext  
+}
+
+add_the_fork_rake_to_the_drawing <- function(x, 
+                                             df, 
+                                             wheel_diameter = 622, 
+                                             i = 500, 
+                                             c = 'R') {
+  # first, add the rake leg of the right triangle
+  # whose long leg is the extended steering axis
+  rake <- x + 
+    geom_segment(aes(x = i + 
+                       dt_triangle['horizontal_projection'] + 
+                       sa_triangle['horizontal_projection'] + 
+                       sa_ext_triangle['horizontal_projection'], 
+                     y = wheel_diameter / 2 + 
+                       cs_triangle['vertical_projection'] - 
+                       sa_ext_triangle['vertical_projection'], 
+                     xend = i + 
+                       dt_triangle['horizontal_projection'] + 
+                       sa_triangle['horizontal_projection'] + 
+                       sa_ext_triangle['horizontal_projection'] + 
+                       rake_triangle['horizontal_projection'], 
+                     yend = wheel_diameter / 2 + 
+                       cs_triangle['vertical_projection'], 
+                     colour = c), 
+                 alpha = 0.1,
+                 data = df)
+  
+  # next, draw the hypotenuse: the adjusted fork. you
+  # could use the CS vertical projection for the yend 
+  # coordinate where you have to end up, as for the 
+  # rake leg above, but if you use the af dims now
+  # this will be an opportunity to check that they are 
+  # correct. if they are, this will close the sa-r-af
+  # triangle. here:
+  rake + 
+    geom_segment(aes(x = i +  
+                       dt_triangle['horizontal_projection'], 
+                     y = wheel_diameter / 2 + 
+                       dt_triangle['vertical_projection'], 
+                     xend = i + 
+                       dt_triangle['horizontal_projection'] + 
+                       af_triangle['horizontal_projection'], 
+                     yend = wheel_diameter / 2 + 
+                       dt_triangle['vertical_projection'] -
+                       af_triangle['vertical_projection'], 
+                     colour = c), 
+                 alpha = 0.1,
+                 data = df)
+}
+
+# if all went well, when we draw a fork starting at the bottom
+# end of the HT extension, with a given rake and cta length,
+# it will end up exactly at the top end of the rake line. here:
+draw_the_true_fork <- function(x, 
+                               df, 
+                               wheel_diameter = 622, 
+                               i = 500, 
+                               c = I('black')) {
+  # we'll first draw the HT extension, then the real fork
+  x + 
+    geom_segment(aes(x = i +  
+                       dt_triangle['horizontal_projection'], 
+                     y = wheel_diameter / 2 + 
+                       dt_triangle['vertical_projection'], 
+                     xend = i +  
+                       dt_triangle['horizontal_projection'] + 
+                       ht_ext_triangle['horizontal_projection'], 
+                     yend = wheel_diameter / 2 + 
+                       dt_triangle['vertical_projection'] - 
+                       ht_ext_triangle['vertical_projection'], 
+                     colour = c),
+                 data = df) + 
+    geom_segment(aes(x = i +  
+                       dt_triangle['horizontal_projection'] + 
+                       ht_ext_triangle['horizontal_projection'], 
+                     y = wheel_diameter / 2 + 
+                       dt_triangle['vertical_projection'] - 
+                       ht_ext_triangle['vertical_projection'], 
+                     xend = i +  
+                       dt_triangle['horizontal_projection'] + 
+                       ht_ext_triangle['horizontal_projection'] + 
+                       f_triangle['horizontal_projection'], 
+                     yend = wheel_diameter / 2 + 
+                       dt_triangle['vertical_projection'] - 
+                       ht_ext_triangle['vertical_projection'] - 
+                       f_triangle['vertical_projection'], 
+                     colour = c),
+                 data = df)
+}
+
+# This is just to get an idea of the overall proportions
+add_the_wheels <- function(x, 
+                           df,
+                           bb_shell_diameter = 34.8, 
+                           wheel_diameter = 622, 
+                           i = 500, 
+                           c = I('black')) {
+  bb_circle <- tibble(x = i, 
+                      y = wheel_diameter / 2, 
+                      r = bb_shell_diameter/2)  
+  rear_wheel <- tibble(x = i - 
+                         df$cs_triangle[['horizontal_projection']], 
+                       y = wheel_diameter / 2 + 
+                         df$cs_triangle[['vertical_projection']], 
+                       r = wheel_diameter/2)
+  front_wheel <- tibble(x = i + 
+                         df$dt_triangle[['horizontal_projection']] + 
+                         df$f_triangle[['horizontal_projection']], 
+                       y = wheel_diameter / 2 + 
+                         df$cs_triangle[['vertical_projection']], 
+                       r = wheel_diameter/2)
+  
+  # alpha here won't matter. geom_circle will
+  # draw the wheels black for now. see
+  # https://github.com/thomasp85/ggforce/issues/180
+  x + 
+    geom_circle(aes(x0 = x, 
+                    y0 = y, 
+                    r = r), 
+                alpha = 0.1, 
+                data = rear_wheel, 
+                inherit.aes = FALSE) + 
+    geom_circle(aes(x0 = x, 
+                    y0 = y, 
+                    r = r), 
+                alpha = 0.1,
+                data = front_wheel, 
+                inherit.aes = FALSE) + 
+    geom_circle(aes(x0 = x, 
+                    y0 = y, 
+                    r = r), 
+                data = bb_circle, 
+                inherit.aes = FALSE)    
+}
+
+# This is to visualize fork trail
+add_the_fork_trail <- function(x, 
+                               df, 
+                               wheel_diameter = 622, 
+                               i = 500, 
+                               c = I('black')) {
+  # recover the HT angle:
+  ht_hp <- df$ht_triangle[['horizontal_projection']]
+  ht_vp <- df$ht_triangle[['vertical_projection']]
+  ht_angle <- 90 - atan(ht_hp/ht_vp)*180/pi
+  
+  # extend the steering axis
+  h <- wheel_diameter / 2
+  sa_vp <- df$sa_triangle['vertical_projection']
+  sa_hp <- df$sa_triangle['horizontal_projection']
+  ground_y <- df$cs_triangle['vertical_projection']
+  rake_point_y <- wheel_diameter / 2 + 
+    df$cs_triangle['vertical_projection'] - 
+    df$rake_triangle['vertical_projection']
+  rake_point_x <- i + 
+    df$dt_triangle['horizontal_projection'] + 
+    df$sa_triangle['horizontal_projection'] + 
+    df$sa_ext_triangle['horizontal_projection']
+  
+  leg_1 <- (wheel_diameter / 2 + df$rake_triangle['vertical_projection'])
+  leg_2 <- leg_1 / tan(ht_angle * pi / 180)
+  
+  # 1. draw a vertical line from the fork DO to the ground
+  spoke <- x + 
+    geom_segment(aes(x = i +  
+                       dt_triangle['horizontal_projection'] + 
+                       af_triangle['horizontal_projection'], 
+                     y = wheel_diameter / 2 + 
+                       cs_triangle['vertical_projection'], 
+                     xend = i + 
+                       dt_triangle['horizontal_projection'] + 
+                       af_triangle['horizontal_projection'], 
+                     yend = cs_triangle['vertical_projection'], 
+                     colour = c), 
+                 alpha = 0.1,
+                 data = df)
+  
+  # 2. extend the steering axis from the rake point to the ground
+  trail <- spoke + 
+    geom_segment(aes(x = rake_point_x, 
+                     y = rake_point_y, 
+                     xend = rake_point_x + leg_2, 
+                     yend = ground_y, 
+                     colour = c), 
+                 alpha = 0.2)
+  
+  # 3. draw the horizontal line that connects the bottom of `spoke`
+  #    and the bottom of `trail`
+  ground <- trail + 
+    geom_segment(aes(x = i +  
+                       dt_triangle['horizontal_projection'] + 
+                       af_triangle['horizontal_projection'], 
+                     y = ground_y, 
+                     xend = i + 
+                       dt_triangle['horizontal_projection'] + 
+                       sa_triangle['horizontal_projection'] + 
+                       sa_ext_triangle['horizontal_projection'] + 
+                       leg_2, 
+                     yend = ground_y, 
+                     colour = c), 
+                 alpha = 0.1,
+                 data = df)
+  trail_length <- (df$sa_triangle['horizontal_projection'] + 
+                     df$sa_ext_triangle['horizontal_projection'] + 
+                     leg_2) - df$af_triangle['horizontal_projection']
+  ground + ggtitle(paste('Trail:', round(trail_length), 'mm'))
+}
+
+# And out of that came a simple utility to calculate fork trail:
+calculate_fork_trail <- function(df, 
+                                 wheel_diameter = 622) {
+  # recover the HT angle:
+  ht_hp <- df$ht_triangle[['horizontal_projection']]
+  ht_vp <- df$ht_triangle[['vertical_projection']]
+  ht_angle <- 90 - atan(ht_hp/ht_vp)*180/pi  
+  
+  # get legs of right triangle
+  leg_1 <- (wheel_diameter / 2 + df$rake_triangle[['vertical_projection']])
+  leg_2 <- leg_1 / tan(ht_angle * pi / 180)
+  
+  # return trail length
+  df$sa_triangle[['horizontal_projection']] + 
+    df$sa_ext_triangle[['horizontal_projection']] + 
+    leg_2 - 
+    df$af_triangle[['horizontal_projection']]
+}
+```
+
+### Completing the picture
+
+Here's what the frame looks like now:
+
+```{r rt_show_more, fig.show='asis', fig.asp = 1, fig.width = 5}
+df_slantsix %>% 
+  draw_the_bicycle() %>% 
+  add_the_steering_axis_to_the_drawing(df_slantsix, c = I('black')) %>% 
+  add_the_fork_rake_to_the_drawing(df_slantsix, c = I('black')) %>% 
+  draw_the_true_fork(df_slantsix) %>% 
+  add_the_fork_trail(df_slantsix) %>% 
+  add_the_wheels(df_slantsix) %>% 
+  print()
+```
+
+The book says that some of these frame measurements are inputs and others outputs. This is another way of saying that you build a frame under certain constraints, so some dimensions are functions of others. You can input some and derive the others any way in theory, math will let you, but sometimes you're constrained by the building technique. For example, lugs come at pre-set angles. You buy a given lugged BB shell, it will come with set CS-DT and ST-DT angles. Those will be inputs.
+
+### More frame metrics
+
+From what we have so far, we can derive some common frame metrics, such as:
+
+ - wheelbase, the distance between the two DO's
+ - front-center, the distance between the BB and the fork axle
+ - BB height, the distance between the ground and the BB
+ - toe overlap (given a crank arm length)
+ - fork trail
+ - OLD CS spacing
+ - ST to rear tire clearance
+
+```{r more_metrics}
+get_old_spacing <- function(cs_length, 
+                            angle_btw_css) {
+  # at a given angle between the chainstays, 
+  # the longer the chainstays the wider the 
+  # over-locknut-dimension (OLD) spacing
+  # for road bikes this should be 130 mm;
+  # for old-school mountain bikes, 135 mm;
+  # and for Surly gnot-rite, 132.5 mm.
+  2 * cs_length * sin((angle_btw_css / 2)*pi/180)
+}
+get_cs_length <- function(old_spacing, 
+                          angle_btw_css) {
+  # you can also guess at the cs length you need 
+  # if you have a BB shell with a given angle btw
+  # chain stays and need a given old_spacing 
+  old_spacing/(2 * sin((angle_btw_css / 2)*pi/180))
+}
+get_st_to_rear_tire_clearance <- function(df, 
+                                          wheel_diameter = 622) {
+  # first, get horizontal distance
+  # btw the rear DO and the ST
+  
+  # get the ST angle to the vertical:
+  st_hp <- df$st_triangle[['horizontal_projection']]
+  st_vp <- df$st_triangle[['vertical_projection']]
+  st_angle <- atan(st_hp/st_vp)*180/pi
+  # get the ss projections
+  ss_hp <- df$ss_triangle[['horizontal_projection']]
+  ss_vp <- df$ss_triangle[['vertical_projection']]
+  
+  # here's the horizontal distance you need:
+  st_hd <- ss_hp + ss_vp * tan(st_angle * pi / 180)
+  
+  # this horizontal distance is a hypotenuse of the
+  # right triangle that connects the read DO to the 
+  # seat tube. the tire clearance is the difference
+  # between the leg that connects the DO to the ST
+  # and half the wheel diameter. The angle between
+  # this leg and the hypotenuse is the same as
+  # st_angle, and you can prove this graphically.
+  # so now we just need a cosine relationship to 
+  # get that leg length:
+  (st_hd * cos(st_angle * pi / 180)) - 
+    (wheel_diameter / 2)
+}
+get_all_the_metrics <- function(df, 
+                                cs_length = 450,
+                                angle_btw_css = 14, 
+                                wheel_diameter = 622, 
+                                crank_arm_length = 170) {
+  wheelbase <- df$cs_triangle[['horizontal_projection']] +
+    df$dt_triangle[['horizontal_projection']] +
+    df$af_triangle[['horizontal_projection']]
+  bb_height <- wheel_diameter / 2 - df$cs_triangle[['vertical_projection']]
+  
+  # toe overlap is distance between the tip of the crank arm
+  # and the edge of the wheel when the crank arm is lined up
+  # perfectly along the front-center line.
+  a <- df$dt_triangle[['horizontal_projection']] +
+    df$af_triangle[['horizontal_projection']]
+  b <- df$cs_triangle[['vertical_projection']]
+  front_center <- sqrt(a^2 + b^2)
+  toe_overlap <- front_center - (crank_arm_length + wheel_diameter / 2)
+  fork_trail <- calculate_fork_trail(df, wheel_diameter)
+  st_to_rear_tire_clearance <- get_st_to_rear_tire_clearance(df, wheel_diameter)
+  old_spacing <- get_old_spacing(cs_length, angle_btw_css)
+  
+  # return the goods
+  c('Wheel base' = wheelbase,
+    'BB height' = bb_height, 
+    'Front center' = front_center, 
+    'Toe overlap' = toe_overlap, 
+    'Fork trail' = fork_trail, 
+    'Seat tube to rear tire clearance' = st_to_rear_tire_clearance, 
+    'OLD spacing' = old_spacing)
+}
+```
+
+### Putting it all together
+
+A wrapper that will return a tibble of frame dimensions, a named list of additional metrics of interest, and a picture would be nice, because it would allow tight control over the inputs, so we don't run the risk that we enter one HT angle in one place, and another somewhere else.
+
+```{r big_wrapper}
+big_bicycle_software <- function(st_length = 500, 
+                                 tt_length = 500, 
+                                 st_angle = 71, 
+                                 tt_angle = 0, 
+                                 ht_angle = 71, 
+                                 st_dt_angle = 58, 
+                                 cs_st_angle = 62,
+                                 cs_length = 450, 
+                                 angle_btw_css = 14, 
+                                 fork_rake = 45, 
+                                 fork_cta_length = 390, 
+                                 wheel_diameter = 622, 
+                                 i = 500, 
+                                 c = I('black'), 
+                                 bb_shell_diameter = 34.8, 
+                                 crank_arm_length = 170) {
+  df <- wrap_frame_dims(st_length = st_length, 
+                        tt_length = tt_length, 
+                        st_angle = st_angle, 
+                        tt_angle = tt_angle, 
+                        ht_angle = ht_angle, 
+                        st_dt_angle = st_dt_angle, 
+                        cs_length = cs_length, 
+                        cs_st_angle = cs_st_angle, 
+                        angle_btw_css = angle_btw_css) %>% 
+  add_steering_axis(fork_rake = fork_rake) %>% 
+  find_ht_extension_and_add_true_fork(fork_cta_length = fork_cta_length)
+  
+  pic <- df %>% 
+    draw_the_bicycle(wheel_diameter = wheel_diameter, 
+                     i = i) %>% 
+    add_the_steering_axis_to_the_drawing(df, 
+                                         wheel_diameter = wheel_diameter, 
+                                         i = i, 
+                                         c = c) %>% 
+    add_the_fork_rake_to_the_drawing(df, 
+                                     wheel_diameter = wheel_diameter, 
+                                     i = i, 
+                                     c = c) %>% 
+    draw_the_true_fork(df, 
+                       wheel_diameter = wheel_diameter, 
+                       i = i, 
+                       c = c) %>% 
+    add_the_fork_trail(df, 
+                       wheel_diameter = wheel_diameter, 
+                       i = i, 
+                       c = c) %>% 
+    add_the_wheels(df, 
+                   bb_shell_diameter = bb_shell_diameter, 
+                   wheel_diameter = wheel_diameter, 
+                   i = i, 
+                   c = c)
+  
+  metrics <- df %>% 
+    get_all_the_metrics(cs_length = cs_length,
+                        angle_btw_css = angle_btw_css, 
+                        wheel_diameter = wheel_diameter, 
+                        crank_arm_length = crank_arm_length) %>% 
+    round()
+  
+  list(data = df, 
+       picture = pic, 
+       metrics = metrics)
+}
+```
+
+How did that go?
+
+```{r all_the_goods}
+goods <- big_bicycle_software()
+```
+
+All frame dimensions are given as triangles: the actual length, its horizontal projection, and its vertical projection. The original wide data frame may be unwieldy. Here's a simple way to make it tidy, so you can then filter lengths easily. The names are lower-case versions of the abbreviations listed earlier. Two things to keep in mind: 
+
+ - where you see `_ext` it means "extension" so for the true HT length in millimeters add `ht` with `ht_ext`
+ - the CS length shown here is the length of the projection (shadow) onto the frame plane; the chain stays stick out of the bottom bracket at an angle that is suitably wide so you can fit a rear wheel between the dropouts; because of this angle, a 450 mm chain stay will show up in the table below as a somewhat lower value in the row labeled `cs` -- the wider the angle, the greater the difference.
+
+```{r show_tidy_dims}
+goods$data %>% 
+  add_column(dim = names(.$st_triangle)) %>% 
+  tidyr::pivot_longer(!dim) %>% 
+  arrange(name, dim) %>% 
+  filter(dim == 'length') %>% 
+  dplyr::select(-dim) %>% 
+  mutate(name = name %>% 
+           stringr::str_replace('_triangle', ''), 
+         value = round(value))
+```
+
+These lengths are represented graphically here:
+
+```{r show_final_picture, fig.show='asis', fig.asp = 1, fig.width = 4}
+print(goods$picture)
+```
+And here are the other sundry metrics:
+
+```{r show_final_metrics}
+tibble(name = names(goods$metrics), 
+       value = goods$metrics)
+```
+
+Clearly, this OLD spacing is inadequate. For modern road bikes it should be 130 mm. The chain stays should come out of the BB shell at a wider angle than what we've set here, or else they will have to be really, really long. The trade-offs between chain stay length and angle between chain stays can be shown by calling `get_old_spacing()` repeatedly with some hypothetical numbers for either argument.
