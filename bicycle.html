@@ -1855,12 +1855,13 @@ wrap_frame_dims &lt;- function(st_length = 500,
 
 draw_the_bicycle &lt;- function(df, 
                              wheel_diameter = 622, 
-                             i = 500) {
+                             i = 500, 
+                             c = I(&#39;black&#39;)) {
   # start with the bottom bracket
   bb_center &lt;- tibble(x = i, 
                       y = wheel_diameter / 2)
   bb_plot &lt;- bb_center %&gt;% 
-    ggplot(aes(x = x, y = y)) + 
+    ggplot(aes(x = x, y = y, colour = c)) + 
     geom_point(alpha = .5)
   
   # first, the easy parts: add the 3 tubes that
@@ -1880,7 +1881,8 @@ draw_the_bicycle &lt;- function(df,
     geom_segment(aes(x = i - cs_triangle[&#39;horizontal_projection&#39;], 
                      y = wheel_diameter / 2 + cs_triangle[&#39;vertical_projection&#39;], 
                      xend = i, 
-                     yend = wheel_diameter / 2), 
+                     yend = wheel_diameter / 2, 
+                     colour = c), 
                  data = df)
   
   # add the seat tube ST:
@@ -1888,7 +1890,8 @@ draw_the_bicycle &lt;- function(df,
     geom_segment(aes(x = i - st_triangle[&#39;horizontal_projection&#39;], 
                      y = wheel_diameter / 2 + st_triangle[&#39;vertical_projection&#39;], 
                      xend = i, 
-                     yend = wheel_diameter / 2), 
+                     yend = wheel_diameter / 2, 
+                     colour = c), 
                  data = df)
   
   # add the down tube DT. notice it points forward, so 
@@ -1898,7 +1901,8 @@ draw_the_bicycle &lt;- function(df,
     geom_segment(aes(x = i + dt_triangle[&#39;horizontal_projection&#39;], 
                      y = wheel_diameter / 2 + dt_triangle[&#39;vertical_projection&#39;], 
                      xend = i, 
-                     yend = wheel_diameter / 2), 
+                     yend = wheel_diameter / 2, 
+                     colour = c), 
                  data = df)  
   
   # add the seat stay SS. no need to draw its
@@ -1923,7 +1927,8 @@ draw_the_bicycle &lt;- function(df,
                        ss_triangle[&#39;horizontal_projection&#39;], 
                      yend = wheel_diameter / 2 + 
                        st_triangle[&#39;vertical_projection&#39;] - 
-                       ss_triangle[&#39;vertical_projection&#39;]), 
+                       ss_triangle[&#39;vertical_projection&#39;], 
+                     colour = c), 
                  data = df)
   
   # add the top tube TT
@@ -1937,7 +1942,8 @@ draw_the_bicycle &lt;- function(df,
                        tt_triangle[&#39;horizontal_projection&#39;], 
                      yend = wheel_diameter / 2 + 
                        st_triangle[&#39;vertical_projection&#39;] + 
-                       tt_triangle[&#39;vertical_projection&#39;]), 
+                       tt_triangle[&#39;vertical_projection&#39;], 
+                     colour = c), 
                  data = df)
   
   # add the head tube HT. like with the seat stay SS, we
@@ -1958,7 +1964,8 @@ draw_the_bicycle &lt;- function(df,
                      yend = wheel_diameter / 2 + 
                        st_triangle[&#39;vertical_projection&#39;] + 
                        tt_triangle[&#39;vertical_projection&#39;] - 
-                       ht_triangle[&#39;vertical_projection&#39;]), 
+                       ht_triangle[&#39;vertical_projection&#39;], 
+                     colour = c), 
                  data = df)  
   
   ht_plot
@@ -2526,7 +2533,8 @@ get_all_the_metrics &lt;- function(df,
   
   pic &lt;- df %&gt;% 
     draw_the_bicycle(wheel_diameter = wheel_diameter, 
-                     i = i) %&gt;% 
+                     i = i, 
+                     c = c) %&gt;% 
     add_the_steering_axis_to_the_drawing(df, 
                                          wheel_diameter = wheel_diameter, 
                                          i = i, 
