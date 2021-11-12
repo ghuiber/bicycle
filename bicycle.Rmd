@@ -231,17 +231,18 @@ wrap_frame_dims <- function(st_length = 500,
   df
 }
 
-draw_the_bicycle <- function(df, 
-                             wheel_diameter = 622, 
-                             i = 500, 
-                             c = I('black')) {
-  # start with the bottom bracket
-  bb_center <- tibble(x = i, 
-                      y = wheel_diameter / 2)
-  bb_plot <- bb_center %>% 
-    ggplot(aes(x = x, y = y, colour = c)) + 
-    geom_point(alpha = .5)
-  
+# x is an existing ggplot object. at a minimum, it's a scatter plot of
+# the bottom bracket shell center. but it can be a bicycle frame of 
+# a previous design already drawn, onto which you can now overlay
+# a new design using the dims in `df` for easy comparison. set
+# the `alpha_factor` to some number lower than 1 if you want some
+# transparency, like when you overlay multiple frames.
+overlay_the_bicycle <- function(x, 
+                                df, 
+                                wheel_diameter = 622, 
+                                i = 500, 
+                                c = I('black'), 
+                                alpha_factor = 1) {
   # first, the easy parts: add the 3 tubes that
   # go into the bottom bracket. it's the same
   # recipe for all three because they form 
@@ -252,15 +253,16 @@ draw_the_bicycle <- function(df,
   # are parallel to the axes. so you draw the
   # tubes between the (x, y) coordinates of 
   # the projections shifted by i from x = 0
-  # and by wheel_diameter / 2 from y = 0
+  # and by wheel_diameter / 2 from y = 0  
   
   # add the chain stay CS:
-  cs_plot <- bb_plot + 
+  cs_plot <- x + 
     geom_segment(aes(x = i - cs_triangle['horizontal_projection'], 
                      y = wheel_diameter / 2 + cs_triangle['vertical_projection'], 
                      xend = i, 
                      yend = wheel_diameter / 2, 
                      colour = c), 
+                 alpha = alpha_factor,
                  data = df)
   
   # add the seat tube ST:
@@ -270,6 +272,7 @@ draw_the_bicycle <- function(df,
                      xend = i, 
                      yend = wheel_diameter / 2, 
                      colour = c), 
+                 alpha = alpha_factor,
                  data = df)
   
   # add the down tube DT. notice it points forward, so 
@@ -281,6 +284,7 @@ draw_the_bicycle <- function(df,
                      xend = i, 
                      yend = wheel_diameter / 2, 
                      colour = c), 
+                 alpha = alpha_factor,
                  data = df)  
   
   # add the seat stay SS. no need to draw its
@@ -307,6 +311,7 @@ draw_the_bicycle <- function(df,
                        st_triangle['vertical_projection'] - 
                        ss_triangle['vertical_projection'], 
                      colour = c), 
+                 alpha = alpha_factor,
                  data = df)
   
   # add the top tube TT
@@ -322,6 +327,7 @@ draw_the_bicycle <- function(df,
                        st_triangle['vertical_projection'] + 
                        tt_triangle['vertical_projection'], 
                      colour = c), 
+                 alpha = alpha_factor,
                  data = df)
   
   # add the head tube HT. like with the seat stay SS, we
@@ -344,9 +350,28 @@ draw_the_bicycle <- function(df,
                        tt_triangle['vertical_projection'] - 
                        ht_triangle['vertical_projection'], 
                      colour = c), 
+                 alpha = alpha_factor,
                  data = df)  
   
   ht_plot
+}
+
+# a wrapper for drawing up a fresh frame schematic
+# onto a blank sheet, given dims in `df`
+draw_the_bicycle <- function(df, 
+                             wheel_diameter = 622, 
+                             i = 500, 
+                             c = I('black'), 
+                             alpha_factor = 1) {
+  # start with the bottom bracket
+  bb_center <- tibble(x = i, 
+                      y = wheel_diameter / 2)
+  bb_plot <- bb_center %>% 
+    ggplot(aes(x = x, y = y, colour = c)) + 
+    geom_point(alpha = .5 * alpha_factor)
+  
+  bb_plot %>% 
+    overlay_the_bicycle(df, wheel_diameter, i, c, alpha_factor)
 }
 ```
 
@@ -522,7 +547,8 @@ add_the_steering_axis_to_the_drawing <- function(x,
                                                  df, 
                                                  wheel_diameter = 622, 
                                                  i = 500, 
-                                                 c = 'SA') {
+                                                 c = 'SA', 
+                                                 alpha_factor = 1) {
   # We start at the bottom of the head tube HT
   # (same as the top of the down tube DT, easier)
   # and draw the steering axis down to the height
@@ -539,7 +565,7 @@ add_the_steering_axis_to_the_drawing <- function(x,
                        dt_triangle['vertical_projection'] -
                        sa_triangle['vertical_projection'], 
                      colour = c), 
-                 alpha = 0.1,
+                 alpha = 0.1 * alpha_factor,
                  data = df)
   
   # Now we'll add the steering axis extension
@@ -559,7 +585,7 @@ add_the_steering_axis_to_the_drawing <- function(x,
                        sa_triangle['vertical_projection'] - 
                        sa_ext_triangle['vertical_projection'], 
                      colour = c), 
-                 alpha = 0.1,
+                 alpha = 0.1 * alpha_factor,
                  data = df)
   sa_ext  
 }
@@ -568,7 +594,8 @@ add_the_fork_rake_to_the_drawing <- function(x,
                                              df, 
                                              wheel_diameter = 622, 
                                              i = 500, 
-                                             c = 'R') {
+                                             c = 'R', 
+                                             alpha_factor = 1) {
   # first, add the rake leg of the right triangle
   # whose long leg is the extended steering axis
   rake <- x + 
@@ -587,7 +614,7 @@ add_the_fork_rake_to_the_drawing <- function(x,
                      yend = wheel_diameter / 2 + 
                        cs_triangle['vertical_projection'], 
                      colour = c), 
-                 alpha = 0.1,
+                 alpha = 0.1 * alpha_factor,
                  data = df)
   
   # next, draw the hypotenuse: the adjusted fork. you
@@ -609,7 +636,7 @@ add_the_fork_rake_to_the_drawing <- function(x,
                        dt_triangle['vertical_projection'] -
                        af_triangle['vertical_projection'], 
                      colour = c), 
-                 alpha = 0.1,
+                 alpha = 0.1 * alpha_factor,
                  data = df)
 }
 
@@ -620,7 +647,8 @@ draw_the_true_fork <- function(x,
                                df, 
                                wheel_diameter = 622, 
                                i = 500, 
-                               c = I('black')) {
+                               c = I('black'), 
+                               alpha_factor = 1) {
   # we'll first draw the HT extension, then the real fork
   x + 
     geom_segment(aes(x = i +  
@@ -633,7 +661,8 @@ draw_the_true_fork <- function(x,
                      yend = wheel_diameter / 2 + 
                        dt_triangle['vertical_projection'] - 
                        ht_ext_triangle['vertical_projection'], 
-                     colour = c),
+                     colour = c), 
+                 alpha = alpha_factor,
                  data = df) + 
     geom_segment(aes(x = i +  
                        dt_triangle['horizontal_projection'] + 
@@ -649,7 +678,8 @@ draw_the_true_fork <- function(x,
                        dt_triangle['vertical_projection'] - 
                        ht_ext_triangle['vertical_projection'] - 
                        f_triangle['vertical_projection'], 
-                     colour = c),
+                     colour = c), 
+                 alpha = alpha_factor,
                  data = df)
 }
 
@@ -659,7 +689,8 @@ add_the_wheels <- function(x,
                            bb_shell_diameter = 34.8, 
                            wheel_diameter = 622, 
                            i = 500, 
-                           c = I('black')) {
+                           c = I('black'), 
+                           alpha_factor = 1) {
   bb_circle <- tibble(x = i, 
                       y = wheel_diameter / 2, 
                       r = bb_shell_diameter/2)  
@@ -675,25 +706,27 @@ add_the_wheels <- function(x,
                          df$cs_triangle[['vertical_projection']], 
                        r = wheel_diameter/2)
   
-  # alpha here won't matter. geom_circle will
-  # draw the wheels black for now. see
+  # alpha here won't matter. geom_circle will draw
+  # the wheels black for now, but maybe a future
+  # release will enable setting alpha. see
   # https://github.com/thomasp85/ggforce/issues/180
   x + 
     geom_circle(aes(x0 = x, 
                     y0 = y, 
                     r = r), 
-                alpha = 0.1, 
+                alpha = 0.1 * alpha_factor, 
                 data = rear_wheel, 
                 inherit.aes = FALSE) + 
     geom_circle(aes(x0 = x, 
                     y0 = y, 
                     r = r), 
-                alpha = 0.1,
+                alpha = 0.1 * alpha_factor,
                 data = front_wheel, 
                 inherit.aes = FALSE) + 
     geom_circle(aes(x0 = x, 
                     y0 = y, 
                     r = r), 
+                alpha = 0.1 * alpha_factor,  
                 data = bb_circle, 
                 inherit.aes = FALSE)    
 }
@@ -703,7 +736,8 @@ add_the_fork_trail <- function(x,
                                df, 
                                wheel_diameter = 622, 
                                i = 500, 
-                               c = I('black')) {
+                               c = I('black'), 
+                               alpha_factor = 1) {
   # recover the HT angle:
   ht_hp <- df$ht_triangle[['horizontal_projection']]
   ht_vp <- df$ht_triangle[['vertical_projection']]
@@ -737,7 +771,7 @@ add_the_fork_trail <- function(x,
                        af_triangle['horizontal_projection'], 
                      yend = cs_triangle['vertical_projection'], 
                      colour = c), 
-                 alpha = 0.1,
+                 alpha = 0.1 * alpha_factor,
                  data = df)
   
   # 2. extend the steering axis from the rake point to the ground
@@ -747,7 +781,7 @@ add_the_fork_trail <- function(x,
                      xend = rake_point_x + leg_2, 
                      yend = ground_y, 
                      colour = c), 
-                 alpha = 0.2)
+                 alpha = 0.1 * alpha_factor)
   
   # 3. draw the horizontal line that connects the bottom of `spoke`
   #    and the bottom of `trail`
@@ -763,12 +797,13 @@ add_the_fork_trail <- function(x,
                        leg_2, 
                      yend = ground_y, 
                      colour = c), 
-                 alpha = 0.1,
+                 alpha = 0.1 * alpha_factor,
                  data = df)
+  # here's the trail length, btw:
   trail_length <- (df$sa_triangle['horizontal_projection'] + 
                      df$sa_ext_triangle['horizontal_projection'] + 
                      leg_2) - df$af_triangle['horizontal_projection']
-  ground + ggtitle(paste('Trail:', round(trail_length), 'mm'))
+  ground
 }
 
 # And out of that came a simple utility to calculate fork trail:
@@ -918,6 +953,7 @@ big_bicycle_software <- function(st_length = 500,
                                  wheel_diameter = 622, 
                                  i = 500, 
                                  c = I('black'), 
+                                 alpha_factor = 1,
                                  bb_shell_diameter = 34.8, 
                                  crank_arm_length = 170) {
   df <- wrap_frame_dims(st_length = st_length, 
@@ -934,27 +970,33 @@ big_bicycle_software <- function(st_length = 500,
   
   pic <- df %>% 
     draw_the_bicycle(wheel_diameter = wheel_diameter, 
+                     alpha_factor = alpha_factor, 
                      i = i, 
                      c = c) %>% 
     add_the_steering_axis_to_the_drawing(df, 
                                          wheel_diameter = wheel_diameter, 
+                                         alpha_factor = alpha_factor, 
                                          i = i, 
                                          c = c) %>% 
     add_the_fork_rake_to_the_drawing(df, 
                                      wheel_diameter = wheel_diameter, 
+                                     alpha_factor = alpha_factor, 
                                      i = i, 
                                      c = c) %>% 
     draw_the_true_fork(df, 
                        wheel_diameter = wheel_diameter, 
+                       alpha_factor = alpha_factor, 
                        i = i, 
                        c = c) %>% 
     add_the_fork_trail(df, 
                        wheel_diameter = wheel_diameter, 
+                       alpha_factor = alpha_factor, 
                        i = i, 
                        c = c) %>% 
     add_the_wheels(df, 
                    bb_shell_diameter = bb_shell_diameter, 
                    wheel_diameter = wheel_diameter, 
+                   alpha_factor = alpha_factor, 
                    i = i, 
                    c = c)
   
@@ -1007,3 +1049,97 @@ tibble(name = names(goods$metrics),
 ```
 
 Clearly, this OLD spacing is inadequate. For modern road bikes it should be 130 mm. The chain stays should come out of the BB shell at a wider angle than what we've set here, or else they will have to be really, really long. The trade-offs between chain stay length and angle between chain stays can be shown by calling `get_old_spacing()` repeatedly with some hypothetical numbers for either argument.
+
+### Comparing frame designs
+
+What if you had a frame with a classic horizontal top tube, and another with a slant top tube but a shorter seat tube? And what if the chain stay lengths and fork rakes were different too? Or the seat tube angle? Here's a way to compare them:
+
+```{r design_two_frames}
+df_slantsix <- wrap_frame_dims(st_length = 460, 
+                               cs_length = 430,
+                               tt_angle = 6, 
+                               st_dt_angle = 58, 
+                               cs_st_angle = 62) %>% 
+  add_steering_axis(fork_rake = 45) %>% 
+  find_ht_extension_and_add_true_fork()
+
+df_classic <- wrap_frame_dims(st_dt_angle = 60, 
+                              cs_st_angle = 60, 
+                              st_angle = 68) %>% 
+  add_steering_axis(fork_rake = 55) %>% 
+  find_ht_extension_and_add_true_fork()
+```
+
+Now let's compare them:
+
+```{r compare_them}
+wd   <- 622
+i    <- 500
+al_ss <- 1
+c_ss <- 'slantsix'
+c_cl <- 'classic'
+
+df_slantsix %>% 
+    draw_the_bicycle(wheel_diameter = wd, 
+                     alpha_factor = al_ss, 
+                     i = i, 
+                     c = c_ss) %>% 
+    add_the_steering_axis_to_the_drawing(df_slantsix, 
+                                         wheel_diameter = wd, 
+                                         alpha_factor = al_ss, 
+                                         i = i, 
+                                         c = c_ss) %>% 
+    add_the_fork_rake_to_the_drawing(df_slantsix, 
+                                     wheel_diameter = wd, 
+                                     alpha_factor = al_ss, 
+                                     i = i, 
+                                     c = c_ss) %>% 
+    draw_the_true_fork(df_slantsix, 
+                       wheel_diameter = wd, 
+                       alpha_factor = al_ss, 
+                       i = i, 
+                       c = c_ss) %>% 
+    add_the_fork_trail(df_slantsix, 
+                       wheel_diameter = wd, 
+                       alpha_factor = al_ss, 
+                       i = i, 
+                       c = c_ss) %>% 
+    add_the_wheels(df_slantsix, 
+                   bb_shell_diameter = 34.8, 
+                   wheel_diameter = wd, 
+                   alpha_factor = al_ss, 
+                   i = i, 
+                   c = c_ss) %>% 
+    overlay_the_bicycle(df_classic, 
+                        wheel_diameter = wd, 
+                        alpha_factor = al_ss, 
+                        i = i, 
+                        c = c_cl) %>% 
+    add_the_steering_axis_to_the_drawing(df_classic, 
+                                         wheel_diameter = wd, 
+                                         alpha_factor = al_ss, 
+                                         i = i, 
+                                         c = c_cl) %>% 
+    add_the_fork_rake_to_the_drawing(df_classic, 
+                                     wheel_diameter = wd, 
+                                     alpha_factor = al_ss, 
+                                     i = i, 
+                                     c = c_cl) %>% 
+    draw_the_true_fork(df_classic, 
+                       wheel_diameter = wd, 
+                       alpha_factor = al_ss, 
+                       i = i, 
+                       c = c_cl) %>% 
+    add_the_fork_trail(df_classic, 
+                       wheel_diameter = wd, 
+                       alpha_factor = al_ss, 
+                       i = i, 
+                       c = c_cl) %>% 
+    add_the_wheels(df_classic, 
+                   bb_shell_diameter = 34.8, 
+                   wheel_diameter = wd, 
+                   alpha_factor = al_ss, 
+                   i = i, 
+                   c = c_cl)
+```
+
