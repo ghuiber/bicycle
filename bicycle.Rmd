@@ -1165,7 +1165,7 @@ bicycles <- tibble(df = list(slantsix = wrap_frame_dims(st_length = 460,
                             .f = function(x, y) {
                               get_all_the_metrics(x, 
                                                   angle_btw_css = 14, 
-                                                  wheel_diameter = 622, 
+                                                  wheel_diameter = y, 
                                                   crank_arm_length = 170, 
                                                   old_spacing = 130, 
                                                   bbs_width = 68)
