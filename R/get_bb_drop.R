@@ -1,7 +1,25 @@
+#' Get the bottom bracket drop
+#'
+#' @param cs_st_angle The angle between the chain stay (cs) and seat tube (st) in degrees.
+#' @param st_angle The angle between the seat tube and the horizontal.
+#' @param cs_length Chain stay length in millimeters.
+#' @param angle_btw_css Angle between chain stays, in degrees.
+#'
+#' @return A scalar equal to the bottom bracket drop in millimeters.
+#' @export
+#'
+#' @examples
+#' get_bb_drop(60, 74, 450, 14)
 get_bb_drop <- function(cs_st_angle,
                         st_angle,
                         cs_length,
                         angle_btw_css) {
+  # some reasonable conditions
+  stopifnot(cs_st_angle > 0 && cs_st_angle < 180)
+  stopifnot(angle_btw_css > 0 && angle_btw_css < 30)
+  stopifnot(st_angle > 0 && st_angle < 90)
+  stopifnot(cs_length > 0)
+
   # This is a 2d projection of the bike frame: its shadow
   # as if it were lying on the ground with the sun at noon.
   # The chain stay sticks out from the ground starting at the
