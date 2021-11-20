@@ -13,9 +13,14 @@ Ed.](https://www.amazon.com/dp/1492232645?psc=1&ref=ppx_yo2_dt_b_product_details
 by Marc-Andre R. Chimonas. It allows you to save multiple frame designs
 and compare any two them as a ggplot object. The main goal of this
 package is to provide a framework where I can add more functions as the
-need arises. For example, I would like to be able to eventually deriving
-all the missing frame dimensions from published frame geometry tables
-and sketch the frames out for visual comparisons.
+need arises.
+
+For example, bicycle makers publish geometry tables on their websites
+for models that they have in production. These tables have some useful
+dimensions – seat tube length, head tube angle, fork rake, etc. – but
+they do not show everything that you need to sketch out the frame and
+compare it to another. It would be nice to have some functions on hand
+that can derive what’s missing from what’s available.
 
 ## Installation
 
