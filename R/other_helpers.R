@@ -83,6 +83,8 @@ get_all_the_metrics <- function(df,
   fork_trail <- calculate_fork_trail(df, wheel_diameter)
   st_to_rear_tire_clearance <- get_st_to_rear_tire_clearance(df, wheel_diameter)
   bbsc_offset <- get_bbsc_offset(old_spacing, angle_btw_css, cs_length, bbs_width)
+  ett_length <- df$tt_triangle[['horizontal_projection']] +
+    df$ett_triangle[['horizontal_projection']]
 
   # return the goods
   c('Wheel base' = wheelbase,
@@ -91,7 +93,8 @@ get_all_the_metrics <- function(df,
     'Toe overlap' = toe_overlap,
     'Fork trail' = fork_trail,
     'Seat tube to rear tire clearance' = st_to_rear_tire_clearance,
-    'BBSC offset' = bbsc_offset)
+    'BBSC offset' = bbsc_offset,
+    'Effective top tube length' = ett_length)
 }
 
 #' Get all the things

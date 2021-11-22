@@ -11,7 +11,7 @@ find_ht_extension_and_add_true_fork(
 )
 }
 \arguments{
-\item{frame_dims}{A 6 x 3 tibble with frame dimensions from the front
+\item{frame_dims}{A 7 x 3 tibble with frame dimensions from the front
 and rear triangle, returned by \code{\link[=wrap_frame_dims]{wrap_frame_dims()}}.}
 
 \item{fork_rake}{The fork rake in millimeters}
@@ -19,7 +19,7 @@ and rear triangle, returned by \code{\link[=wrap_frame_dims]{wrap_frame_dims()}}
 \item{fork_cta_length}{The fork crown-to-axle length in millimeters.}
 }
 \value{
-A 12 x 3 tibble.
+A 13 x 3 tibble.
 }
 \description{
 The fork is specified with a given crown-to-axle length and

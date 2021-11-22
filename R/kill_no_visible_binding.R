@@ -4,7 +4,8 @@
 # Discussion here: https://stackoverflow.com/questions/9439256/how-can-i-handle-r-cmd-check-no-visible-binding-for-global-variable-notes-when
 utils::globalVariables(c('.',
                          'af_triangle',
-                         'cs_triangle', 'dt_triangle',
+                         'cs_triangle',
+                         'dt_triangle',
                          'f_triangle',
                          'ht_ext_triangle',
                          'ht_triangle',
@@ -15,5 +16,6 @@ utils::globalVariables(c('.',
                          'ss_triangle',
                          'st_triangle',
                          'tt_triangle',
+                         'ett_triangle',
                          'x',
                          'y'))

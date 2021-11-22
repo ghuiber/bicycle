@@ -36,7 +36,7 @@ wrap_frame_dims(
 \item{angle_btw_css}{Angle between chain stays, in degrees.}
 }
 \value{
-A 6 x 3 tibble.
+A 7 x 3 tibble.
 }
 \description{
 This is a convenience wrapper that puts together the

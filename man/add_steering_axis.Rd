@@ -7,13 +7,13 @@
 add_steering_axis(frame_dims, fork_rake = 45)
 }
 \arguments{
-\item{frame_dims}{A 6 x 3 tibble with frame dimensions from the front
+\item{frame_dims}{A 7 x 3 tibble with frame dimensions from the front
 and rear triangle, returned by \code{\link[=wrap_frame_dims]{wrap_frame_dims()}}.}
 
 \item{fork_rake}{The fork rake in millimeters}
 }
 \value{
-A 10 x 3 tibble.
+An 11 x 3 tibble.
 }
 \description{
 The adjusted fork and the actual fork are two different

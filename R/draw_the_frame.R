@@ -198,6 +198,69 @@ draw_the_bicycle <- function(df,
                         alpha_factor)
 }
 
+#' Add the effective top tube to a frame drawing
+#'
+#' Useful for slant top tube designs. For horizontal
+#' top tube designs there's nothing to add and you
+#' can check in `df`: the elements of the `ett_triangle`
+#' vector will be all 0.
+#'
+#' @inheritParams overlay_the_bicycle
+#'
+#' @return A ggplot object.
+#' @seealso [ggplot2::ggplot()]
+#' @export
+add_the_ett_to_the_drawing <- function(x,
+                                       df,
+                                       wheel_diameter = 622,
+                                       i = 350,
+                                       c = I('black'),
+                                       alpha_factor = 1) {
+  # We start with the seat tube extension
+  st_ext_plot <- x +
+    geom_segment(aes(x = i +
+                       cs_triangle['horizontal_projection'] -
+                       st_triangle['horizontal_projection'] -
+                       ett_triangle['horizontal_projection'],
+                     y = wheel_diameter / 2 -
+                       cs_triangle['vertical_projection'] +
+                       st_triangle['vertical_projection'] +
+                       ett_triangle['vertical_projection'],
+                     xend = i +
+                       cs_triangle['horizontal_projection'] -
+                       st_triangle['horizontal_projection'],
+                     yend = wheel_diameter / 2 -
+                       cs_triangle['vertical_projection'] +
+                       st_triangle['vertical_projection'],
+                     colour = c),
+                 alpha = 0.1 * alpha_factor,
+                 data = df)
+
+  # The we add the effective top tube
+  ett_plot <- st_ext_plot +
+    geom_segment(aes(x = i +
+                       cs_triangle['horizontal_projection'] -
+                       st_triangle['horizontal_projection'] -
+                       ett_triangle['horizontal_projection'],
+                     y = wheel_diameter / 2 -
+                       cs_triangle['vertical_projection'] +
+                       st_triangle['vertical_projection'] +
+                       ett_triangle['vertical_projection'],
+                     xend = i +
+                       cs_triangle['horizontal_projection'] -
+                       st_triangle['horizontal_projection'] +
+                       tt_triangle['horizontal_projection'],
+                     yend = wheel_diameter / 2 -
+                       cs_triangle['vertical_projection'] +
+                       st_triangle['vertical_projection'] +
+                       tt_triangle['vertical_projection'],
+                     colour = c),
+                 alpha = 0.1 * alpha_factor,
+                 data = df)
+
+  ett_plot
+}
+
 #' Add the steering axis to a frame drawing
 #'
 #' _Warning_: this requires a frame design tibble `df` that has the columns

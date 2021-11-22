@@ -7,7 +7,7 @@
 calculate_fork_trail(df, wheel_diameter = 622)
 }
 \arguments{
-\item{df}{A 12 x 3 tibble with frame dimensions returned by \code{\link[=find_ht_extension_and_add_true_fork]{find_ht_extension_and_add_true_fork()}}.}
+\item{df}{A tibble with frame dimensions returned by \code{\link[=find_ht_extension_and_add_true_fork]{find_ht_extension_and_add_true_fork()}}.}
 
 \item{wheel_diameter}{Wheel diameter in millimeters; 622 is the bead seat diameter
 of a 700c wheel. To see the effect of the tire width, add 2 x tire width in millimeters}

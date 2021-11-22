@@ -8,12 +8,12 @@
 #' steering axis, but is shorter. The difference is the
 #' head tube extension.
 #'
-#' @param frame_dims A 6 x 3 tibble with frame dimensions from the front
+#' @param frame_dims A 7 x 3 tibble with frame dimensions from the front
 #' and rear triangle, returned by [bicycle::wrap_frame_dims()].
 #' @param fork_rake The fork rake in millimeters
 #' @seealso [bicycle::wrap_frame_dims()]
 #'
-#' @return A 10 x 3 tibble.
+#' @return An 11 x 3 tibble.
 #' @export
 add_steering_axis <- function(frame_dims,
                               fork_rake = 45) {
@@ -90,7 +90,7 @@ add_steering_axis <- function(frame_dims,
 #' @param fork_cta_length The fork crown-to-axle length in millimeters.
 #' @seealso [bicycle::wrap_frame_dims()]
 #'
-#' @return A 12 x 3 tibble.
+#' @return A 13 x 3 tibble.
 #' @export
 find_ht_extension_and_add_true_fork <- function(frame_dims,
                                                 fork_rake = 45,
@@ -163,7 +163,7 @@ find_ht_extension_and_add_true_fork <- function(frame_dims,
 #' [bicycle::find_ht_extension_and_add_true_fork()] you
 #' can now calculate the fork trail.
 #'
-#' @param df A 12 x 3 tibble with frame dimensions returned by [bicycle::find_ht_extension_and_add_true_fork()].
+#' @param df A tibble with frame dimensions returned by [bicycle::find_ht_extension_and_add_true_fork()].
 #' @param wheel_diameter Wheel diameter in millimeters; 622 is the bead seat diameter
 #' of a 700c wheel. To see the effect of the tire width, add 2 x tire width in millimeters
 #'
