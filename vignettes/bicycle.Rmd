@@ -220,7 +220,7 @@ goods$data %>%
 
 These lengths are represented graphically here:
 
-```{r show_final_picture, fig.show='asis', fig.asp = 1, fig.width = 4}
+```{r show_final_picture, fig.show='asis', fig.asp = 1, fig.width = 5}
 print(goods$picture)
 ```
 
@@ -292,7 +292,8 @@ compare_two_bikes <- function(bicycles_df,
   # wrap all the things again:
   wrap_the_bike_frame <- function(p, df, wheel_diameter, alpha_factor, i, c) {
     p %>%
-      overlay_the_bicycle(df, wheel_diameter, i, c, alpha_factor) %>%
+      overlay_the_bicycle(df, wheel_diameter, i, c, alpha_factor) %>% 
+      add_the_ett_to_the_drawing(df, wheel_diameter, i, c, alpha_factor) %>%
       add_the_steering_axis_to_the_drawing(df, wheel_diameter, i, c, alpha_factor) %>%
       add_the_fork_rake_to_the_drawing(df, wheel_diameter, i, c, alpha_factor) %>%
       draw_the_true_fork(df, wheel_diameter, i, c, alpha_factor) %>%
@@ -323,6 +324,6 @@ compare_two_bikes <- function(bicycles_df,
 
 Now let's compare them:
 
-```{r compare_them}
+```{r compare_them, fig.show='asis', fig.asp = 1, fig.width = 5}
 print(compare_two_bikes(bicycles))
 ```
