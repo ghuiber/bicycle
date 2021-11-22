@@ -104,12 +104,6 @@ get_bb_drop <- function(cs_st_angle,
   bb_drop
 }
 
-# dt_angle + ht_angle = ht_dt_angle, useful later
-get_dt_angle <- function(st_dt_angle, st_angle) {
-  # derived from here (sketch it out on paper)
-  (90 - st_angle) + (90 - st_dt_angle)
-}
-
 # also useful later for ht length calculation
 get_bb_tt_diagonal <- function(st_length, 
                                tt_length,
@@ -184,13 +178,18 @@ get_front_triangle_dims <- function(st_length = 500,
                                     ht_angle = 71, 
                                     st_dt_angle = 60) {
   tt_ht_angle <- 180 - (ht_angle + tt_angle)
-  dt_angle <- get_dt_angle(st_dt_angle, st_angle)
+  dt_angle <- (90 - st_angle) + (90 - st_dt_angle) # 1
+  ht_dt_angle <- dt_angle + ht_angle               # 2
+  # neither 1 nor 2 may feel intuitively true to you.
+  # if so, sketch the frame out on paper. they can be
+  # both proved with some basic Euclidean geometry. 
+  # it's easier if you can look at the drawing.
   bb_tt_diagonal <- get_bb_tt_diagonal(st_length, tt_length, st_angle, tt_angle)
   tt_diagonal_angle <- acos(-(st_length^2 - (tt_length^2 + bb_tt_diagonal^2))/(2*tt_length*bb_tt_diagonal))*180/pi
   st_diagonal_angle <- acos(-(tt_length^2 - (st_length^2 + bb_tt_diagonal^2))/(2*st_length*bb_tt_diagonal))*180/pi
   diagonal_dt_angle <- st_dt_angle - st_diagonal_angle
   diagonal_ht_angle <- tt_ht_angle - tt_diagonal_angle
-  ht_dt_angle <- dt_angle + ht_angle
+  
   
   dt_length <- sin(diagonal_ht_angle * pi / 180) * bb_tt_diagonal / sin(ht_dt_angle * pi / 180)
   dt_triangle <- c(length = dt_length, 

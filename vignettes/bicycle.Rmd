@@ -1,0 +1,142 @@
+---
+title: "bicycle"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{bicycle}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(magrittr)
+library(bicycle)
+```
+
+# Introduction
+
+This is an attempt to code up Chapter 4 of [Lugged Bicycle Frame Construction, 3rd Ed.](https://www.amazon.com/dp/1492232645?psc=1&ref=ppx_yo2_dt_b_product_details) by Marc-Andre R. Chimonas.
+
+Abbreviations:
+
+  - ST: seat tube
+  - DT: down tube
+  - TT: top tube
+  - HT: head tube
+  - SS: seat stay(s)
+  - CS: chain stay(s)
+  - BB: bottom bracket
+  - F: fork
+  - DO: dropout
+  
+Frame Angles:
+
+  - ST-DT: seat tube - down tube
+  - ST-TT: seat tube - top tube
+  - TT-HT: top tube - head tube
+  - DT-HT: down tube - head tube
+  - ST-CS: seat tube - chain stay
+  - CS-SS: chain stay - seat stay
+  - ST-SS: seat tube - seat stay
+  
+Other measurements:
+
+ - W: wheelbase -- the distance between centers of the rear (CS) and front (F) dropouts
+ - D: bottom bracket drop -- height of the center of DO - height of the center of BB
+ - FC: front center -- distance between center of BB and center of fork DO
+ - seat and head angle: angles that ST and HT make with the flat ground; they are the same value if ST and HT are parallel, as in the classic design.
+ - TT slope: 0&deg; in the classic design, 6&deg; in the slant-six design.
+ 
+A bike frame has to have a certain shape, so some of the measurements are going to depend on others. So designing a frame can be thought of as a function that accepts certain inputs and returns some outputs, with some constraints that must be met for the inputs to be valid.
+
+Inputs:
+
+ - ST length
+ - TT length
+ - four angles of the front triangle, which must add up to 360&deg; ("front triangle" is a misnomer; it's a quadrilateral bound by the TT, ST, DT and HT read in counterclockwise order)
+ - F crown-to-axle length
+ - F rake
+ - CS length
+ - rim and tire size
+ - CS-DT angle
+ - crank length.
+ 
+ Outputs: 
+
+ - HT length
+ - DT length
+ - BB drop, height
+ - FC
+ - toe overlap
+ - stand-over height and clearance
+ - head and seat angles
+ - wheelbase
+ - fork trail
+ - TT slope 
+ - SS length
+ - SS-CS angle
+ - SS-ST angle.
+ 
+This main function will be a wrapper around a bunch of smaller convenience functions that will do some trigonometric calculations. 
+
+# An example
+
+Let's sketch out a slant-six frame. This is a design where the top tube has a 6-degree slope. We're making this choice explicit by setting `tt_angle = 6`. Other than that, we're leaving most arguments of `wrap_frame_dims()` at their default values:
+
+```{r build_frame_example}
+df_slantsix <- wrap_frame_dims(tt_angle = 6, 
+                               st_dt_angle = 58, 
+                               cs_st_angle = 62)
+```
+
+# Taking it apart
+
+What did we just get?
+
+```{r show_first_frame}
+df_slantsix %>% knitr::kable(digits = 0)
+```
+
+A bicycle frame is made up of nine tubes: one each of ST, TT, DT, HT, two CS's, two ST's, and one BB shell. The `df_slantsix` describes all but the BB shell as right triangles. In the case of the first four, the length of the tube is the hypotenuse and the legs are the horizontal and vertical projections with reference to the ground, as the bicycle stands on it. 
+
+The CS and SS tubes are special, because they to not lie onto the bicycle plane. Instead, they stick out from it at an angle. The seat stays meet at the top of the seat tube and spread out at the dropouts to accommodate the rear wheel hub; the chain stays start at the bottom bracket shell close together and then spread out to meet the seat stay ends in the rear wheel dropouts. So the CS and SS lengths given in the `df_slantsix` are not the actual lengths of the tubes, but the lengths of their projections onto the bicycle plane. That is why you see 447 mm on the first row of the `cs_triangle` column when `wrap_frame_dims()`, as called above, specified a chain stay of 450 mm.
+
+## Where's the bottom bracket shell?
+
+The BB shell is omitted because its dimensions are standard, and in the case of a lugged frame construction it comes pre-cast. You just buy it. The most common BB shells for road bikes are 68 mm wide and have an internal diameter of about 34 mm. I say "about" because they are threaded, so this diameter varies between its widest at the bottom of the thread and its narrowest at the top of the thread. Wheels Manufacturing shows a complete table [here](https://wheelsmfg.com/bb-standards).
+
+Lugged BB shells come with 3 angles specified: 
+
+ - CS-ST angle
+ - ST-DT angle
+ - angle between chain stays
+
+There's also a distance specified that might as well be called bottom bracket shell center offset. It is marked 15.5 in [this drawing](https://www.renehersecycles.com/shop/equipment/framebuilding/bottom-bracket-shell-standard/). It's the distance between the center line of the bottom bracket shell and the center line of the chain stay, measured along the axis of the bottom bracket shell. It will feature in our functions as the argument `bbsc_offset`. This distance is important, because you have some wiggle room on setting it. The BB shell width is given, but inside that width you can stick in the chain stays at varying degrees and spaced apart by varying lengths of `bbsc_offset` times two.
+
+## How do you set the chain stay length?
+
+Longer chain stays make for a more comfortable ride; shorter ones make for better power transmission. Whatever the length, you aim for a given OLD rear dropout spacing. OLD is short for over-locknut-dimension and it's how wide apart the ends of the chain stays must be for the rear wheel to fit into the dropouts precisely. It is not visible in the drawing plane, because it is perpendicular to it. But the length of the CS projection onto the frame plane depends on it. OLD, like BB shell width, is standardized: it's 130 mm for a modern road frame, 135 mm for an old-school mountain bike, and it can be narrower or wider for different kinds of bikes, some older, some newer. Because steel has some flex, there is also an intermediate 132.5 mm OLD. This is the "gnot rite" spacing on the Surly Cross Check frame, and it's supposed to work for either jamming a 135 mm hub in there or for pinching the chain stays around a 130 mm one. This is feasible because 2.5 mm difference works out to 1.25 mm on each side and that is acceptable, but in general the distance between the dropouts should be close to the OLD so that the dropouts are parallel when squeezed onto the hub locknuts. If they are not, they will tend to bend the axle and put shearing strain onto sealed bearing hubs.
+
+So when you design a frame the chain stay length is an input, but it cannot be entirely arbitrary, because it's the slant side of a trapezoid whose other three sides are half of the OLD, the rear wheel radius plus some clearance, and the `bbsc_offset`. The first is given; the second must clear the wheel radius, which is given; and third must fit within the BB shell width, also given. You'll want to check it for meeting these constraints when you set it, and you might as well write some functions for that. In this package they are defined in `R/old_helpers.R`.
+
+## The BB drop
+
+Think of the chain stay as anchored at the dropout, which hags in the air at the center of the rear wheel. It is not parallel to the ground. It meets the bottom bracket at some point below the dropout. The difference in height between the dropout and the bottom bracket is called BB drop. The lower, the more comfortable the ride, but it cannot be too low because then you may strike the ground with the pedal when you lean into a turn. The height of the dropout is made up by the sum of the BB drop and the BB height. You can determine the BB drop from the CS length using the `get_bb_drop()` function. This will be useful to know when you're designing a frame for a given wheel size. Exotic (read, stupid) designs with very small wheels may even have a negative BB drop.
+
+# How to draw it
+
+The rear dropout is a good way to anchor the frame drawing on paper. If we compare two frames drawn on the same plot, to check differences in BB drop, trail, wheel base, etc. they will all be immediately obvious. The trail segments will be drawn along the same horizontal like if the two frames have identical wheel diameters. If the two frames have different wheel diameters, anchoring at the the x coordinate of the rear DO and the y coordinate of the frame's wheel diameter / 2 produces a clean vertical shift between the two frames and the differences in the horizontal dimensions are equally easy to see because they all begin at the same offset. Finally, you can see immediately when you look at the plot that the ground is at the x axis, a natural place for it.
+
+Here's an example:
+
+```{r show_frame_example_anchored_at_rear_do, fig.show='asis', fig.asp = 1, fig.width = 4}
+df_slantsix %>% 
+  draw_the_bicycle()
+```
+
