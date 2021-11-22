@@ -156,4 +156,71 @@ df_slantsix <- df_slantsix %>%
 df_slantsix %>% knitr::kable(digits = 0)
 ```
 
+## Completing the picture
 
+Here's what the frame looks like now:
+
+```{r big_picture, fig.show='asis', fig.asp = 1, fig.width = 5}
+df_slantsix %>% 
+  draw_the_bicycle() %>% 
+  add_the_fork_rake_to_the_drawing(df_slantsix) %>% 
+  draw_the_true_fork(df_slantsix) %>% 
+  add_the_wheels(df_slantsix) %>% 
+  add_the_fork_trail(df_slantsix) %>% 
+  print()
+```
+
+# More frame metrics
+
+Recall that some of these frame measurements are inputs and others outputs. Because you build a frame under certain constraints, some dimensions are functions of others. You can input some and derive the others any way in theory, math will let you, but sometimes you're constrained by the building technique. For example, lugs come at pre-set angles. You buy a given lugged BB shell, it will come with set CS-DT and ST-DT angles. Those will have to be inputs; there's no other way. 
+
+When you're not constrained in this fashion, you can use some of the functions in `R/other_helpers.R` for deriving what you don't have from what you do, given known frame building constraints. This can be useful when you are trying to compare two frames built from published geometry tables where different vendors leave out different things.
+
+From what we have so far, we can derive some common frame metrics, such as:
+
+ - wheelbase, the distance between the two DO's
+ - front-center, the distance between the BB and the fork axle
+ - BB height, the distance between the ground and the BB
+ - toe overlap (given a crank arm length)
+ - fork trail
+ - bottom bracket shell center offset
+ - ST to rear tire clearance
+ 
+# Putting it all together
+
+A wrapper that will return a tibble of frame dimensions, a named list of additional metrics of interest, and a picture would be nice, because it would allow tight control over the inputs, so we don't run the risk that we enter one HT angle in one place, and another somewhere else. That is what `big_bicycle()` does.
+
+```{r all_the_goods}
+goods <- big_bicycle()
+```
+
+The original wide data frame may be unwieldy. Here's a simple way to make it tidy, so you can then filter lengths easily. The names are lower-case versions of the abbreviations listed earlier. Two things to keep in mind: 
+
+ - where you see `_ext` it means "extension" so for the true HT length in millimeters add `ht` with `ht_ext`
+ - the CS length shown here is the length of the projection (shadow) onto the frame plane; the chain stays stick out of the bottom bracket at an angle that is suitably wide so you can fit a rear wheel between the dropouts; because of this angle, a 450 mm chain stay will show up in the table below as a somewhat lower value in the row labeled `cs` -- the wider the angle, the greater the difference.
+
+```{r show_tidy_dims}
+goods$data %>% 
+  tibble::add_column(dim = names(.$st_triangle)) %>% 
+  tidyr::pivot_longer(!dim) %>% 
+  dplyr::arrange(name, dim) %>% 
+  dplyr::filter(dim == 'length') %>% 
+  dplyr::select(-dim) %>% 
+  dplyr::mutate(name = name %>% 
+                  stringr::str_replace('_triangle', ''), 
+                value = round(value))
+```
+
+These lengths are represented graphically here:
+
+```{r show_final_picture, fig.show='asis', fig.asp = 1, fig.width = 4}
+print(goods$picture)
+```
+
+And here are the other sundry metrics:
+
+```{r show_final_metrics}
+tibble::tibble(name = names(goods$metrics), 
+               value = goods$metrics) %>% 
+  knitr::kable()
+```

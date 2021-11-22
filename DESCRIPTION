@@ -14,7 +14,8 @@ Imports:
     purrr,
     tibble,
     ggplot2,
-    ggforce
+    ggforce, 
+    stringr
 Suggests: 
     rmarkdown,
     knitr,

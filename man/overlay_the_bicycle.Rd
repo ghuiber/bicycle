@@ -19,7 +19,8 @@ the rear dropout center. But it can be a bicycle frame of a previous design
 already drawn, onto which you can now overlay a new design using the dims
 in \code{df} for easy comparison.}
 
-\item{df}{A frame design tibble, such as drawn by \code{\link[=wrap_frame_dims]{wrap_frame_dims()}}.}
+\item{df}{A frame design tibble, such as the minimal one drawn by \code{\link[=wrap_frame_dims]{wrap_frame_dims()}}
+or the one augmented by \code{\link[=find_ht_extension_and_add_true_fork]{find_ht_extension_and_add_true_fork()}}.}
 
 \item{wheel_diameter}{Wheel diameter in millimeters; 622 is the bead seat diameter
 of a 700c wheel. To see the effect of the tire width, add 2 x tire width in millimeters

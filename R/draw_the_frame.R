@@ -22,7 +22,8 @@
 #' the rear dropout center. But it can be a bicycle frame of a previous design
 #' already drawn, onto which you can now overlay a new design using the dims
 #' in `df` for easy comparison.
-#' @param df A frame design tibble, such as drawn by [bicycle::wrap_frame_dims()].
+#' @param df A frame design tibble, such as the minimal one drawn by [bicycle::wrap_frame_dims()]
+#' or the one augmented by [bicycle::find_ht_extension_and_add_true_fork()].
 #' @param wheel_diameter Wheel diameter in millimeters; 622 is the bead seat diameter
 #' of a 700c wheel. To see the effect of the tire width, add 2 x tire width in millimeters
 #' -- i.e. specify `wheel_diameter = 622 + 2 * 32` for a 32 mm tire.
@@ -195,4 +196,348 @@ draw_the_bicycle <- function(df,
                         i,
                         c,
                         alpha_factor)
+}
+
+#' Add the steering axis to a frame drawing
+#'
+#' _Warning_: this requires a frame design tibble `df` that has the columns
+#' added by [bicycle::find_ht_extension_and_add_true_fork()]. A
+#' minimal `df` tibble as drawn by [bicycle::wrap_frame_dims()] will
+#' not be sufficient.
+#'
+#' @inheritParams overlay_the_bicycle
+#'
+#' @return A ggplot object.
+#' @seealso [ggplot2::ggplot()]
+#' @export
+add_the_steering_axis_to_the_drawing <- function(x,
+                                                 df,
+                                                 wheel_diameter = 622,
+                                                 i = 350,
+                                                 c = I('black'),
+                                                 alpha_factor = 1) {
+  # We start at the bottom of the head tube HT
+  # (same as the top of the down tube DT, easier)
+  # and draw the steering axis down to the height
+  # of the dropouts first.
+  sa_check <- x +
+    geom_segment(aes(x = i +
+                       cs_triangle['horizontal_projection'] +
+                       dt_triangle['horizontal_projection'],
+                     y = wheel_diameter / 2 -
+                       cs_triangle['vertical_projection'] +
+                       dt_triangle['vertical_projection'],
+                     xend = i +
+                       cs_triangle['horizontal_projection'] +
+                       dt_triangle['horizontal_projection'] +
+                       sa_triangle['horizontal_projection'],
+                     yend = wheel_diameter / 2 -
+                       cs_triangle['vertical_projection'] +
+                       dt_triangle['vertical_projection'] -
+                       sa_triangle['vertical_projection'],
+                     colour = c),
+                 alpha = 0.1 * alpha_factor,
+                 data = df)
+
+  # Now we'll add the steering axis extension
+  sa_ext <- sa_check +
+    geom_segment(aes(x = i +
+                       cs_triangle['horizontal_projection'] +
+                       dt_triangle['horizontal_projection'] +
+                       sa_triangle['horizontal_projection'],
+                     y = wheel_diameter / 2,
+                     xend = i +
+                       cs_triangle['horizontal_projection'] +
+                       dt_triangle['horizontal_projection'] +
+                       sa_triangle['horizontal_projection'] +
+                       sa_ext_triangle['horizontal_projection'],
+                     yend = wheel_diameter / 2 -
+                       sa_ext_triangle['vertical_projection'],
+                     colour = c),
+                 alpha = 0.1 * alpha_factor,
+                 data = df)
+  sa_ext
+}
+
+#' Add the fork rake to a frame drawing
+#'
+#' _Warning_: this requires a frame design tibble `df` that has the columns
+#' added by [bicycle::find_ht_extension_and_add_true_fork()]. A
+#' minimal `df` tibble as drawn by [bicycle::wrap_frame_dims()] will
+#' not be sufficient.
+#'
+#' @inheritParams overlay_the_bicycle
+#'
+#' @return A ggplot object.
+#' @seealso [ggplot2::ggplot()]
+#' @export
+add_the_fork_rake_to_the_drawing <- function(x,
+                                             df,
+                                             wheel_diameter = 622,
+                                             i = 350,
+                                             c = I('black'),
+                                             alpha_factor = 1) {
+  # first, add the rake leg of the right triangle
+  # whose long leg is the extended steering axis
+  rake <- x +
+    geom_segment(aes(x = i +
+                       cs_triangle['horizontal_projection'] +
+                       dt_triangle['horizontal_projection'] +
+                       sa_triangle['horizontal_projection'] +
+                       sa_ext_triangle['horizontal_projection'],
+                     y = wheel_diameter / 2 -
+                       sa_ext_triangle['vertical_projection'],
+                     xend = i +
+                       cs_triangle['horizontal_projection'] +
+                       dt_triangle['horizontal_projection'] +
+                       sa_triangle['horizontal_projection'] +
+                       sa_ext_triangle['horizontal_projection'] +
+                       rake_triangle['horizontal_projection'],
+                     yend = wheel_diameter / 2,
+                     colour = c),
+                 alpha = 0.1 * alpha_factor,
+                 data = df)
+
+  # next, draw the hypotenuse: the adjusted fork. you
+  # could use the CS vertical projection for the yend
+  # coordinate where you have to end up, as for the
+  # rake leg above, but if you use the af dims now
+  # this will be an opportunity to check that they are
+  # correct. if they are, this will close the sa-r-af
+  # triangle. here:
+  rake +
+    geom_segment(aes(x = i +
+                       cs_triangle['horizontal_projection'] +
+                       dt_triangle['horizontal_projection'],
+                     y = wheel_diameter / 2 -
+                       cs_triangle['vertical_projection'] +
+                       dt_triangle['vertical_projection'],
+                     xend = i +
+                       cs_triangle['horizontal_projection'] +
+                       dt_triangle['horizontal_projection'] +
+                       af_triangle['horizontal_projection'],
+                     yend = wheel_diameter / 2 -
+                       cs_triangle['vertical_projection'] +
+                       dt_triangle['vertical_projection'] -
+                       af_triangle['vertical_projection'],
+                     colour = c),
+                 alpha = 0.1 * alpha_factor,
+                 data = df)
+}
+
+#' Add the true fork to a frame drawing
+#'
+#' _Warning_: this requires a frame design tibble `df` that has the columns
+#' added by [bicycle::find_ht_extension_and_add_true_fork()]. A
+#' minimal `df` tibble as drawn by [bicycle::wrap_frame_dims()] will
+#' not be sufficient. If all went well, when we draw a fork starting at
+#' the bottom end of the HT extension, with a given rake and cta length,
+#' it will end up exactly at the top end of the rake line.
+#'
+#' @inheritParams overlay_the_bicycle
+#'
+#' @return A ggplot object.
+#' @seealso [ggplot2::ggplot()]
+#' @export
+draw_the_true_fork <- function(x,
+                               df,
+                               wheel_diameter = 622,
+                               i = 350,
+                               c = I('black'),
+                               alpha_factor = 1) {
+  # we'll first draw the HT extension, then the real fork
+  x +
+    geom_segment(aes(x = i +
+                       cs_triangle['horizontal_projection'] +
+                       dt_triangle['horizontal_projection'],
+                     y = wheel_diameter / 2 -
+                       cs_triangle['vertical_projection'] +
+                       dt_triangle['vertical_projection'],
+                     xend = i +
+                       cs_triangle['horizontal_projection'] +
+                       dt_triangle['horizontal_projection'] +
+                       ht_ext_triangle['horizontal_projection'],
+                     yend = wheel_diameter / 2 -
+                       cs_triangle['vertical_projection'] +
+                       dt_triangle['vertical_projection'] -
+                       ht_ext_triangle['vertical_projection'],
+                     colour = c),
+                 alpha = alpha_factor,
+                 data = df) +
+    geom_segment(aes(x = i +
+                       cs_triangle['horizontal_projection'] +
+                       dt_triangle['horizontal_projection'] +
+                       ht_ext_triangle['horizontal_projection'],
+                     y = wheel_diameter / 2 -
+                       cs_triangle['vertical_projection'] +
+                       dt_triangle['vertical_projection'] -
+                       ht_ext_triangle['vertical_projection'],
+                     xend = i +
+                       cs_triangle['horizontal_projection'] +
+                       dt_triangle['horizontal_projection'] +
+                       ht_ext_triangle['horizontal_projection'] +
+                       f_triangle['horizontal_projection'],
+                     yend = wheel_diameter / 2 -
+                       cs_triangle['vertical_projection'] +
+                       dt_triangle['vertical_projection'] -
+                       ht_ext_triangle['vertical_projection'] -
+                       f_triangle['vertical_projection'],
+                     colour = c),
+                 alpha = alpha_factor,
+                 data = df)
+}
+
+#' Add the wheels to a frame drawing
+#'
+#' Adding the wheels to the frame plot may help you get an idea of the overall
+#' proportions. Other than that, it's not a very useful thing to do.
+#' _Warning_: this requires a frame design tibble `df` that has the columns
+#' added by [bicycle::find_ht_extension_and_add_true_fork()]. A
+#' minimal `df` tibble as drawn by [bicycle::wrap_frame_dims()] will
+#' not be sufficient. If all went well, when we draw a fork starting at
+#' the bottom end of the HT extension, with a given rake and cta length,
+#' it will end up exactly at the top end of the rake line.
+#'
+#' @inheritParams overlay_the_bicycle
+#' @param bb_shell_diameter Outer diameter of the BB shell in millimeters.
+#'
+#' @return A ggplot object.
+#' @seealso [ggplot2::ggplot()]
+#' @export
+add_the_wheels <- function(x,
+                           df,
+                           bb_shell_diameter = 34.8,
+                           wheel_diameter = 622,
+                           i = 350,
+                           c = I('black'),
+                           alpha_factor = 1) {
+  bb_circle <- tibble(x = i +
+                        df$cs_triangle[['horizontal_projection']],
+                      y = wheel_diameter / 2 -
+                        df$cs_triangle[['vertical_projection']],
+                      r = bb_shell_diameter/2)
+  rear_wheel <- tibble(x = i,
+                       y = wheel_diameter / 2,
+                       r = wheel_diameter/2)
+  front_wheel <- tibble(x = i +
+                          df$cs_triangle[['horizontal_projection']] +
+                          df$dt_triangle[['horizontal_projection']] +
+                          df$f_triangle[['horizontal_projection']],
+                        y = wheel_diameter / 2,
+                        r = wheel_diameter/2)
+
+  # alpha here won't matter. geom_circle will draw
+  # the wheels black for now, but maybe a future
+  # release will enable setting alpha. see
+  # https://github.com/thomasp85/ggforce/issues/180
+  x +
+    geom_circle(aes(x0 = x,
+                    y0 = y,
+                    r = r),
+                alpha = 0.1 * alpha_factor,
+                data = rear_wheel,
+                inherit.aes = FALSE) +
+    geom_circle(aes(x0 = x,
+                    y0 = y,
+                    r = r),
+                alpha = 0.1 * alpha_factor,
+                data = front_wheel,
+                inherit.aes = FALSE) +
+    geom_circle(aes(x0 = x,
+                    y0 = y,
+                    r = r),
+                alpha = 0.1 * alpha_factor,
+                data = bb_circle,
+                inherit.aes = FALSE)
+}
+
+#' Add the fork trail to a frame drawing
+#'
+#' Once you have the fork rake, you might as well visualize the trail.
+#' _Warning_: this requires a frame design tibble `df` that has the columns
+#' added by [bicycle::find_ht_extension_and_add_true_fork()]. A
+#' minimal `df` tibble as drawn by [bicycle::wrap_frame_dims()] will
+#' not be sufficient. If all went well, when we draw a fork starting at
+#' the bottom end of the HT extension, with a given rake and cta length,
+#' it will end up exactly at the top end of the rake line.
+#'
+#' @inheritParams overlay_the_bicycle
+#'
+#' @return A ggplot object.
+#' @seealso [ggplot2::ggplot()]
+#' @export
+add_the_fork_trail <- function(x,
+                               df,
+                               wheel_diameter = 622,
+                               i = 350,
+                               c = I('black'),
+                               alpha_factor = 1) {
+  # recover the HT angle:
+  ht_hp <- df$ht_triangle[['horizontal_projection']]
+  ht_vp <- df$ht_triangle[['vertical_projection']]
+  ht_angle <- 90 - atan(ht_hp/ht_vp)*180/pi
+
+  # extend the steering axis
+  h <- wheel_diameter / 2
+  sa_vp <- df$sa_triangle['vertical_projection']
+  sa_hp <- df$sa_triangle['horizontal_projection']
+  rake_point_y <- wheel_diameter / 2 -
+    df$rake_triangle['vertical_projection']
+  rake_point_x <- i +
+    df$cs_triangle['horizontal_projection'] +
+    df$dt_triangle['horizontal_projection'] +
+    df$sa_triangle['horizontal_projection'] +
+    df$sa_ext_triangle['horizontal_projection']
+
+  leg_1 <- (wheel_diameter / 2 + df$rake_triangle['vertical_projection'])
+  leg_2 <- leg_1 / tan(ht_angle * pi / 180)
+
+  # 1. draw a vertical line from the fork DO to the ground
+  spoke <- x +
+    geom_segment(aes(x = i +
+                       cs_triangle['horizontal_projection'] +
+                       dt_triangle['horizontal_projection'] +
+                       af_triangle['horizontal_projection'],
+                     y = wheel_diameter / 2,
+                     xend = i +
+                       cs_triangle['horizontal_projection'] +
+                       dt_triangle['horizontal_projection'] +
+                       af_triangle['horizontal_projection'],
+                     yend = 0,
+                     colour = c),
+                 alpha = 0.1 * alpha_factor,
+                 data = df)
+
+  # 2. extend the steering axis from the rake point to the ground
+  trail <- spoke +
+    geom_segment(aes(x = rake_point_x,
+                     y = rake_point_y,
+                     xend = rake_point_x + leg_2,
+                     yend = 0,
+                     colour = c),
+                 alpha = 0.1 * alpha_factor)
+
+  # 3. draw the horizontal line that connects the bottom of `spoke`
+  #    and the bottom of `trail`
+  ground <- trail +
+    geom_segment(aes(x = i +
+                       cs_triangle['horizontal_projection'] +
+                       dt_triangle['horizontal_projection'] +
+                       af_triangle['horizontal_projection'],
+                     y = 0,
+                     xend = i +
+                       cs_triangle['horizontal_projection'] +
+                       dt_triangle['horizontal_projection'] +
+                       sa_triangle['horizontal_projection'] +
+                       sa_ext_triangle['horizontal_projection'] +
+                       leg_2,
+                     yend = 0,
+                     colour = c),
+                 alpha = 0.1 * alpha_factor,
+                 data = df)
+  # here's the trail length, btw:
+  trail_length <- (df$sa_triangle['horizontal_projection'] +
+                     df$sa_ext_triangle['horizontal_projection'] +
+                     leg_2) - df$af_triangle['horizontal_projection']
+  ground
 }

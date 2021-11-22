@@ -26,7 +26,10 @@
 #' @docType package
 #' @name bicycle
 #' @importFrom magrittr %>%
+#' @import dplyr
 #' @import tibble
 #' @import ggplot2
+#' @import ggforce
+#' @import stringr
 NULL
 #> NULL

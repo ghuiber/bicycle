@@ -90,12 +90,12 @@ add_steering_axis <- function(frame_dims,
 #' @param fork_cta_length The fork crown-to-axle length in millimeters.
 #' @seealso [bicycle::wrap_frame_dims()]
 #'
-#' @return An 11 x 3 tibble.
+#' @return A 12 x 3 tibble.
 #' @export
-find_ht_extension_and_add_true_fork <- function(df,
+find_ht_extension_and_add_true_fork <- function(frame_dims,
                                                 fork_rake = 45,
                                                 fork_cta_length = 390) {
-  df <- df %>% add_steering_axis(fork_rake)
+  df <- frame_dims %>% add_steering_axis(fork_rake)
   stopifnot(fork_cta_length < df$af_triangle['length'])
   # the right triangle whose long leg is the SA + SA_ext
   # and short leg is the fork rake has a hypotenuse that
@@ -154,4 +154,35 @@ find_ht_extension_and_add_true_fork <- function(df,
     add_column(f_triangle = c(length = fork_cta_length,
                               vertical_projection = r_vp,
                               horizontal_projection = r_hp))
+}
+
+#' Calculate fork trail
+#'
+#' Given a tibble with all the frame dimensions you get
+#' after you run both [bicycle::wrap_frame_dims()] and
+#' [bicycle::find_ht_extension_and_add_true_fork()] you
+#' can now calculate the fork trail.
+#'
+#' @param df A 12 x 3 tibble with frame dimensions returned by [bicycle::find_ht_extension_and_add_true_fork()].
+#' @param wheel_diameter Wheel diameter in millimeters; 622 is the bead seat diameter
+#' of a 700c wheel. To see the effect of the tire width, add 2 x tire width in millimeters
+#'
+#' @return A scalar equal to the fork trail in millimeters
+#' @export
+calculate_fork_trail <- function(df,
+                                 wheel_diameter = 622) {
+  # recover the HT angle:
+  ht_hp <- df$ht_triangle[['horizontal_projection']]
+  ht_vp <- df$ht_triangle[['vertical_projection']]
+  ht_angle <- 90 - atan(ht_hp/ht_vp)*180/pi
+
+  # get legs of right triangle
+  leg_1 <- (wheel_diameter / 2 + df$rake_triangle[['vertical_projection']])
+  leg_2 <- leg_1 / tan(ht_angle * pi / 180)
+
+  # return trail length
+  df$sa_triangle[['horizontal_projection']] +
+    df$sa_ext_triangle[['horizontal_projection']] +
+    leg_2 -
+    df$af_triangle[['horizontal_projection']]
 }

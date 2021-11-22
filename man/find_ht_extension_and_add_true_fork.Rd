@@ -4,15 +4,22 @@
 \alias{find_ht_extension_and_add_true_fork}
 \title{Add the true fork}
 \usage{
-find_ht_extension_and_add_true_fork(df, fork_rake = 45, fork_cta_length = 390)
+find_ht_extension_and_add_true_fork(
+  frame_dims,
+  fork_rake = 45,
+  fork_cta_length = 390
+)
 }
 \arguments{
+\item{frame_dims}{A 6 x 3 tibble with frame dimensions from the front
+and rear triangle, returned by \code{\link[=wrap_frame_dims]{wrap_frame_dims()}}.}
+
 \item{fork_rake}{The fork rake in millimeters}
 
 \item{fork_cta_length}{The fork crown-to-axle length in millimeters.}
 }
 \value{
-An 11 x 3 tibble.
+A 12 x 3 tibble.
 }
 \description{
 The fork is specified with a given crown-to-axle length and
