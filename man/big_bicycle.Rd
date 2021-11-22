@@ -59,6 +59,8 @@ of a 700c wheel. To see the effect of the tire width, add 2 x tire width in mill
 
 \item{alpha_factor}{The transparency of the line segments, \code{alpha}.}
 
+\item{bb_shell_diameter}{Outer diameter of the BB shell in millimeters.}
+
 \item{crank_arm_length}{The crank arm length in millimeters. Typical values are 165, 170 and 175 for adult riders.}
 
 \item{old_spacing}{Over-locknut-dimension (hub width) in millimeters.}

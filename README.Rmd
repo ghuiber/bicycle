@@ -42,7 +42,7 @@ get_bb_drop(60, 72, 430, 10)
 
 And here's a basic bike frame:
 
-```{r cars}
+```{r simple_bike}
 library(magrittr)
 wrap_frame_dims(tt_angle = 6, 
                 st_dt_angle = 58, 

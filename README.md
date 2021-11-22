@@ -54,6 +54,6 @@ wrap_frame_dims(tt_angle = 6,
 #> Joining, by = "st_triangle"
 ```
 
-<img src="man/figures/README-cars-1.png" width="100%" />
+<img src="man/figures/README-simple_bike-1.png" width="100%" />
 
 See the vignette for more.

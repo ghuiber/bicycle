@@ -16,6 +16,7 @@ knitr::opts_chunk$set(
 
 ```{r setup}
 library(magrittr)
+library(tidyr)
 library(bicycle)
 library(ggplot2)
 ```
@@ -243,26 +244,26 @@ bicycles <- tibble::tibble(df = list(slantsix = wrap_frame_dims(st_length = 460,
                                                                 tt_angle = 6, 
                                                                 st_dt_angle = 58, 
                                                                 cs_st_angle = 62) %>% 
-                               find_ht_extension_and_add_true_fork(fork_rake = 45), 
-                               classic = wrap_frame_dims(st_dt_angle = 60, 
-                                                         cs_st_angle = 60, 
-                                                         st_angle = 68) %>% 
-                               find_ht_extension_and_add_true_fork(fork_rake = 45))) %>% 
+                                       find_ht_extension_and_add_true_fork(fork_rake = 45), 
+                                     classic = wrap_frame_dims(st_dt_angle = 60, 
+                                                               cs_st_angle = 60, 
+                                                               st_angle = 68) %>% 
+                                       find_ht_extension_and_add_true_fork(fork_rake = 45))) %>% 
   tibble::add_column(wheel_diameter = c(622 + (20 * 2), 
-                                622 + 30 *2), 
+                                        622 + 30 *2), 
                      i = 350, 
                      c = names(.$df)) %>% 
   dplyr::mutate_at(.vars = c('wheel_diameter', 'i', 'c'), 
                    .funs = function(x) {names(x) <- names(.$df); x}) %>% 
   tibble::add_column(metrics = purrr::pmap(.l = list(x = .$df, y = .$wheel_diameter), 
                                            .f = function(x, y) {
-                                              get_all_the_metrics(x, 
-                                                                  angle_btw_css = 14, 
-                                                                  wheel_diameter = y, 
-                                                                  crank_arm_length = 170, 
-                                                                  old_spacing = 130, 
-                                                                  bbs_width = 68)
-                                              }))
+                                             get_all_the_metrics(x, 
+                                                                 angle_btw_css = 14, 
+                                                                 wheel_diameter = y, 
+                                                                 crank_arm_length = 170, 
+                                                                 old_spacing = 130, 
+                                                                 bbs_width = 68)
+                                           }))
 
 # for now, limit the comparisons to two bikes at a time.
 # I can't figure out how to use the ggplot + syntax to
@@ -306,7 +307,7 @@ compare_two_bikes <- function(bicycles_df,
                         i = bicycles_df$i[bike_pair[2]], 
                         c = bicycles_df$c[bike_pair[2]], 
                         alpha_factor = alpha_factor)
-    
+  
   p + 
     ylab('') + 
     xlab('') + 

@@ -103,6 +103,7 @@ get_all_the_metrics <- function(df,
 #' @inheritParams wrap_frame_dims
 #' @inheritParams find_ht_extension_and_add_true_fork
 #' @inheritParams draw_the_bicycle
+#' @inheritParams add_the_wheels
 #' @inheritParams get_all_the_metrics
 #'
 #' @return A named list
