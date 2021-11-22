@@ -140,3 +140,20 @@ df_slantsix %>%
   draw_the_bicycle()
 ```
 
+Each of the 6 tubes shown above could have been drawn as a right triangle with the length (shown on the first row of `df_slantsix`) as the hypotenuse and its vertical and horizontal projections (shown on the second and third rows respectively) as the legs, but that would have made for unnecessary clutter. The elements of each column in `df_slantsix` are named because the plotting functions rely on the names for drawing things correctly. You can use the names to recover any of these dimensions for any reason.
+
+# Adding a fork
+
+Given a wheel diameter, the rear DO will sit in space at half that height, and the front DO will have to sit at the same height if the wheels are the same size. So think of the CS as pivoting from the rear DO. Where does the BB end up, and what happens to the DT? The sharper the CS to DT angle is, the deeper the BB drop. This angle is split between the CS to ST angle and the ST to DT angle. Other things equal, the steeper the ST, the slacker the DT angle,and the the longer the HT. That HT length can only extend down toward the wheel because the top of the HT is fixed by the TT length and angle. As the HT grows longer, the room for a fork that is long enough to clear the front wheel decreases. So the total CS-DT angle can only grow so much before you run out of room for the front wheel, or else you have to give the fork a huge rake.
+
+This matters because our bike frame schematic so far is missing a piece at the bottom of the HT. The fork crown cannot come up all the way to where the DT and the HT meet, so the HT has got to be longer than what's been drawn so far. How much longer? That's what we'll calculate next. It must be long enough to accommodate the fork we pick, which will have a rake and a crown-to-axle length given. This crown-to-axle length needs to be larger than the wheel radius (with the inflated tire on) but it also has to be shorter than the adjusted fork length shown in the first row of the `af_triangle` column in the data frame drawn by `wrap_frame_dims()`. That length, in turn, will vary depending on your choices for the `st_dt_angle` and `cs_st_angle` arguments, for the reason detailed in the previous paragraph. So, when you pick a value for the `fork_cta_length` argument in the function `find_ht_extension_and_add_true_fork()`, you must make sure that it is lower than what you see in the first row of the `af_triangle` column that will be added to the data frame drawn by `wrap_frame_dims()` when you run `add_steering_axis()`.
+
+Here are the dimensions we need for drawing up the frame with the fork included:
+
+```{r collect_all_the_dims}
+df_slantsix <- df_slantsix %>% 
+  find_ht_extension_and_add_true_fork()
+df_slantsix %>% knitr::kable(digits = 0)
+```
+
+
