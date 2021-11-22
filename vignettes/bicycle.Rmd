@@ -17,6 +17,7 @@ knitr::opts_chunk$set(
 ```{r setup}
 library(magrittr)
 library(bicycle)
+library(ggplot2)
 ```
 
 # Introduction
@@ -223,4 +224,99 @@ And here are the other sundry metrics:
 tibble::tibble(name = names(goods$metrics), 
                value = goods$metrics) %>% 
   knitr::kable()
+```
+
+## Comparing frame designs
+
+What if you had a frame with a classic horizontal top tube, and another with a slant top tube but a shorter seat tube? And what if the chain stay lengths and fork rakes were different too? Or the seat tube angle? Or the tire size? Here's a way to compare them:
+
+```{r design_two_frames}
+# Put them all into one container data frame. Each frame spec has
+# its own name in the df column and these names will encode the 
+# colors. In other words, you can stack any number of frame
+# designs, just give them unique names. Let's suppose also that 
+# you're trying different tire sizes on 700c (iso 622 mm) wheels, 
+# so add different inflated tire heights to the wheel diameters.
+# We might as well add the other metrics, to have them on hand.
+bicycles <- tibble::tibble(df = list(slantsix = wrap_frame_dims(st_length = 460, 
+                                                                cs_length = 430,
+                                                                tt_angle = 6, 
+                                                                st_dt_angle = 58, 
+                                                                cs_st_angle = 62) %>% 
+                               find_ht_extension_and_add_true_fork(fork_rake = 45), 
+                               classic = wrap_frame_dims(st_dt_angle = 60, 
+                                                         cs_st_angle = 60, 
+                                                         st_angle = 68) %>% 
+                               find_ht_extension_and_add_true_fork(fork_rake = 45))) %>% 
+  tibble::add_column(wheel_diameter = c(622 + (20 * 2), 
+                                622 + 30 *2), 
+                     i = 350, 
+                     c = names(.$df)) %>% 
+  dplyr::mutate_at(.vars = c('wheel_diameter', 'i', 'c'), 
+                   .funs = function(x) {names(x) <- names(.$df); x}) %>% 
+  tibble::add_column(metrics = purrr::pmap(.l = list(x = .$df, y = .$wheel_diameter), 
+                                           .f = function(x, y) {
+                                              get_all_the_metrics(x, 
+                                                                  angle_btw_css = 14, 
+                                                                  wheel_diameter = y, 
+                                                                  crank_arm_length = 170, 
+                                                                  old_spacing = 130, 
+                                                                  bbs_width = 68)
+                                              }))
+
+# for now, limit the comparisons to two bikes at a time.
+# I can't figure out how to use the ggplot + syntax to
+# add multiple layers in a loop. If it's possible and it
+# comes to me, I will relax this constraint
+compare_two_bikes <- function(bicycles_df, 
+                              bike_pair = names(bicycles$df), 
+                              alpha_factor = 1) {
+  # a blank canvas: 
+  p <- ggplot(data = bicycles_df)
+  
+  # add the the rear dropout:
+  add_do <- function(p, j) {
+    p + 
+      geom_point(aes(x = i[j], 
+                     y = wheel_diameter[j]/2, 
+                     colour = c[j]), 
+                 alpha = .5 * alpha_factor)
+  }
+  
+  # wrap all the things again:
+  wrap_the_bike_frame <- function(p, df, wheel_diameter, alpha_factor, i, c) {
+    p %>%
+      overlay_the_bicycle(df, wheel_diameter, i, c, alpha_factor) %>%
+      add_the_steering_axis_to_the_drawing(df, wheel_diameter, i, c, alpha_factor) %>%
+      add_the_fork_rake_to_the_drawing(df, wheel_diameter, i, c, alpha_factor) %>%
+      draw_the_true_fork(df, wheel_diameter, i, c, alpha_factor) %>%
+      add_the_fork_trail(df, wheel_diameter, i, c, alpha_factor)
+  }
+  
+  p <- add_do(p, bike_pair[1])
+  p <- add_do(p, bike_pair[2])
+  p <- p %>% 
+    wrap_the_bike_frame(bicycles_df$df[[bike_pair[1]]], 
+                        wheel_diameter = bicycles_df$wheel_diameter[bike_pair[1]], 
+                        i = bicycles_df$i[bike_pair[1]], 
+                        c = bicycles_df$c[bike_pair[1]], 
+                        alpha_factor = alpha_factor) %>% 
+    wrap_the_bike_frame(bicycles_df$df[[bike_pair[2]]], 
+                        wheel_diameter = bicycles_df$wheel_diameter[bike_pair[2]], 
+                        i = bicycles_df$i[bike_pair[2]], 
+                        c = bicycles_df$c[bike_pair[2]], 
+                        alpha_factor = alpha_factor)
+    
+  p + 
+    ylab('') + 
+    xlab('') + 
+    guides(color = guide_legend(title = "",)) + 
+    geom_vline(xintercept = bicycles_df$i[1], alpha = .1)
+}
+```
+
+Now let's compare them:
+
+```{r compare_them}
+print(compare_two_bikes(bicycles))
 ```
