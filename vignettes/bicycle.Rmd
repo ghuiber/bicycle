@@ -314,8 +314,7 @@ compare_two_bikes <- function(bicycles_df,
   p + 
     ylab('') + 
     xlab('') + 
-    guides(color = guide_legend(title = "",)) + 
-    geom_vline(xintercept = bicycles_df$i[1], alpha = .1)
+    guides(color = guide_legend(title = "",))
 }
 ```
 
