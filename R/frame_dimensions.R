@@ -95,6 +95,56 @@ get_front_triangle_dims <- function(st_length = 500,
                  ett_triangle)
 }
 
+#' Add extension to top of the head or seat tube
+#'
+#' The frame reach is the difference between the x coordinate
+#' of the top of the head tube and the x coordinate of the
+#' bottom bracket. This is measured at the true top of the head
+#' tube, which is somewhere above the point where the top tube
+#' and the head tube meet. The true length of the head tube is
+#' a derived dimension, but the distance between the top of the
+#' head tube and the point where the top tube and the head tube
+#' meet, set here as `t_extension`, can be an arbitrary input if
+#' you have a welded frame. In a lugged frame the top of the head
+#' tube is the same as the top of the HT-TT lug ring.
+#'
+#' The same goes for the top of the seat tube extension. It too
+#' is arbitrary for a welded frame, and the trigonometric
+#' calculations for deriving its vertical and horizontal projections
+#' are identical to those of the head tube extension so we might
+#' as well use the same function for getting at them.
+#'
+#' @param frame_dims A tibble with frame dimensions from the front
+#' and rear triangle, returned by [bicycle::wrap_frame_dims()].
+#' @param tube The name of the tube to be extended: `ht_triangle`
+#' for the head tube or `st_triangle` for the seat tube.
+#' @param t_extension The length of the tube extension in millimeters
+#' @seealso [bicycle::get_front_triangle_dims()]
+#'
+#' @return A tibble.
+#' @export
+add_tube_extension <- function(frame_dims,
+                               tube = 'ht_triangle',
+                               t_extension = 20) {
+  stopifnot(t_extension >= 0)
+  stopifnot(tube %in% c('ht_triangle', 'st_triangle'))
+
+  # recover the tube angle:
+  hp <- frame_dims[[tube]][['horizontal_projection']]
+  vp <- frame_dims[[tube]][['vertical_projection']]
+  t_angle <- 90 - atan(hp/vp)*180/pi
+
+  # get the t_extension triangle:
+  t_triangle = c(length = t_extension,
+                 vertical_projection = t_extension * sin(t_angle * pi / 180),
+                 horizontal_projection = t_extension * cos(t_angle * pi / 180))
+
+  # add it as a new column:
+  col_name <- paste0('t', tube)
+  frame_dims %>%
+    add_column(!!col_name := t_triangle)
+}
+
 #' Get rear triangle dimensions
 #'
 #' The rear triangle is made up of the projection in the horizontal plane

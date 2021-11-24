@@ -26,6 +26,7 @@
 #' @docType package
 #' @name bicycle
 #' @importFrom magrittr %>%
+#' @importFrom rlang :=
 #' @import dplyr
 #' @import tibble
 #' @import ggplot2

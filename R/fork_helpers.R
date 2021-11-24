@@ -8,17 +8,16 @@
 #' steering axis, but is shorter. The difference is the
 #' head tube extension.
 #'
-#' @param frame_dims A 7 x 3 tibble with frame dimensions from the front
+#' @param frame_dims A tibble with frame dimensions from the front
 #' and rear triangle, returned by [bicycle::wrap_frame_dims()].
 #' @param fork_rake The fork rake in millimeters
 #' @seealso [bicycle::wrap_frame_dims()]
 #'
-#' @return An 11 x 3 tibble.
+#' @return A tibble.
 #' @export
 add_steering_axis <- function(frame_dims,
                               fork_rake = 45) {
-  # frame_stats is the df you get from combining
-  # the front and rear triangle stats. recover the HT angle:
+  # recover the HT angle:
   ht_hp <- frame_dims$ht_triangle[['horizontal_projection']]
   ht_vp <- frame_dims$ht_triangle[['vertical_projection']]
   ht_angle <- 90 - atan(ht_hp/ht_vp)*180/pi
@@ -90,7 +89,7 @@ add_steering_axis <- function(frame_dims,
 #' @param fork_cta_length The fork crown-to-axle length in millimeters.
 #' @seealso [bicycle::wrap_frame_dims()]
 #'
-#' @return A 13 x 3 tibble.
+#' @return A tibble with frame and fork dimensions.
 #' @export
 find_ht_extension_and_add_true_fork <- function(frame_dims,
                                                 fork_rake = 45,
