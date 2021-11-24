@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Add the true fork — find_ht_extension_and_add_true_fork • bicycle</title>
+<title>Add extension to top of the head or seat tube — add_tube_extension • bicycle</title>
 
 
 <!-- jquery -->
@@ -39,12 +39,17 @@
 
 
 
-<meta property="og:title" content="Add the true fork — find_ht_extension_and_add_true_fork" />
-<meta property="og:description" content="The fork is specified with a given crown-to-axle length and
-rake. These determine ride characteristics, wheel base length,
-and toe overlap. Depending on how long the fork is, the head
-tube must extend below the point where it meets the down tube
-so we will have to add that bit to the frame dimensions." />
+<meta property="og:title" content="Add extension to top of the head or seat tube — add_tube_extension" />
+<meta property="og:description" content="The frame reach is the difference between the x coordinate
+of the top of the head tube and the x coordinate of the
+bottom bracket. This is measured at the true top of the head
+tube, which is somewhere above the point where the top tube
+and the head tube meet. The true length of the head tube is
+a derived dimension, but the distance between the top of the
+head tube and the point where the top tube and the head tube
+meet, set here as t_extension, can be an arbitrary input if
+you have a welded frame. In a lugged frame the top of the head
+tube is the same as the top of the HT-TT lug ring." />
 
 
 
@@ -110,24 +115,25 @@ so we will have to add that bit to the frame dimensions." />
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Add the true fork</h1>
+    <h1>Add extension to top of the head or seat tube</h1>
     
-    <div class="hidden name"><code>find_ht_extension_and_add_true_fork.Rd</code></div>
+    <div class="hidden name"><code>add_tube_extension.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    <p>The fork is specified with a given crown-to-axle length and
-rake. These determine ride characteristics, wheel base length,
-and toe overlap. Depending on how long the fork is, the head
-tube must extend below the point where it meets the down tube
-so we will have to add that bit to the frame dimensions.</p>
+    <p>The frame reach is the difference between the x coordinate
+of the top of the head tube and the x coordinate of the
+bottom bracket. This is measured at the true top of the head
+tube, which is somewhere above the point where the top tube
+and the head tube meet. The true length of the head tube is
+a derived dimension, but the distance between the top of the
+head tube and the point where the top tube and the head tube
+meet, set here as <code>t_extension</code>, can be an arbitrary input if
+you have a welded frame. In a lugged frame the top of the head
+tube is the same as the top of the HT-TT lug ring.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>find_ht_extension_and_add_true_fork</span><span class='op'>(</span>
-  <span class='va'>frame_dims</span>,
-  fork_rake <span class='op'>=</span> <span class='fl'>45</span>,
-  fork_cta_length <span class='op'>=</span> <span class='fl'>390</span>
-<span class='op'>)</span></pre>
+    <pre class="usage"><span class='fu'>add_tube_extension</span><span class='op'>(</span><span class='va'>frame_dims</span>, tube <span class='op'>=</span> <span class='st'>"ht_triangle"</span>, t_extension <span class='op'>=</span> <span class='fl'>20</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -138,21 +144,29 @@ so we will have to add that bit to the frame dimensions.</p>
 and rear triangle, returned by <code><a href='wrap_frame_dims.html'>wrap_frame_dims()</a></code>.</p></td>
     </tr>
     <tr>
-      <th>fork_rake</th>
-      <td><p>The fork rake in millimeters</p></td>
+      <th>tube</th>
+      <td><p>The name of the tube to be extended: <code>ht_triangle</code>
+for the head tube or <code>st_triangle</code> for the seat tube.</p></td>
     </tr>
     <tr>
-      <th>fork_cta_length</th>
-      <td><p>The fork crown-to-axle length in millimeters.</p></td>
+      <th>t_extension</th>
+      <td><p>The length of the tube extension in millimeters</p></td>
     </tr>
     </table>
 
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>A tibble with frame and fork dimensions.</p>
+    <p>A tibble.</p>
+    <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
+
+    <p>The same goes for the top of the seat tube extension. It too
+is arbitrary for a welded frame, and the trigonometric
+calculations for deriving its vertical and horizontal projections
+are identical to those of the head tube extension so we might
+as well use the same function for getting at them.</p>
     <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
 
-    <div class='dont-index'><p><code><a href='wrap_frame_dims.html'>wrap_frame_dims()</a></code></p></div>
+    <div class='dont-index'><p><code><a href='get_front_triangle_dims.html'>get_front_triangle_dims()</a></code></p></div>
 
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
