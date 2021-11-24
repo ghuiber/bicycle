@@ -13,16 +13,26 @@
 #' pre-determined in lugged frame construction by how the bottom bracket
 #' shell was cast. With these six dimensions in hand we can get the full
 #' set of dimensions that describe the front triangle. This function
-#' returns them as a tibble of four columns, one for each tube, and three
-#' rows. Each tube is described as a right triangle made up of the
-#' tube length as the hypotenuse and the tube's horizontal and vertical
-#' projections as the legs. The elements on each row are named accordingly.
+#' returns them as a tibble of five columns and three rows. Each tube is
+#' described as a right triangle made up of the tube length as the hypotenuse
+#' and the tube's horizontal and vertical projections as the legs. The elements
+#' on each row are named accordingly. Why five columns for four tubes?
+#'
+#' The fifth column, ett_triangle, helps calculate the effective top tube length
+#' when the top tube is slanted. For slanted top tubes the effective length is
+#' the horizontal distance between the front of the top tube and an imaginary
+#' extension of the seat tube equal to the vertical projection of the top tube
+#' times the sine of the seat tube angle in radians. In other words, this
+#' horizontal distance is equal to the horizontal projection of the top tube
+#' plus the vertical projection of the top tube times the tangent of the seat
+#' tube angle in radians. The second term of this addition is the third
+#' element of the ett_triangle vector.
 #'
 #' @inheritParams get_bb_tt_diagonal
 #' @param ht_angle Head tube angle with the horizontal, in degrees.
 #' @param st_dt_angle Angle between the seat tube and the down tube, in degrees.
 #'
-#' @return A 3 x 4 tibble.
+#' @return A 3 x 5 tibble.
 #' @export
 #'
 #' @examples
@@ -71,7 +81,18 @@ get_front_triangle_dims <- function(st_length = 500,
                    vertical_projection = sin(tt_angle * pi / 180) * tt_length,
                    horizontal_projection = cos(tt_angle * pi / 180) * tt_length)
 
-  tibble::tibble(st_triangle, dt_triangle, ht_triangle, tt_triangle)
+  # if the top tube has a slope, then its length is different
+  # from the effective top tube (ett) length. add ett_triangle:
+  tt_vp <- tt_triangle[['vertical_projection']]
+  ett_triangle <- c(length = tt_vp / sin(st_angle * pi / 180),
+                    vertical_projection = tt_vp,
+                    horizontal_projection = tt_vp / tan(st_angle * pi / 180))
+
+  tibble::tibble(st_triangle,
+                 dt_triangle,
+                 ht_triangle,
+                 tt_triangle,
+                 ett_triangle)
 }
 
 #' Get rear triangle dimensions
@@ -151,7 +172,7 @@ get_rear_triangle_dims <- function(st_length = 500,
 #' @seealso [bicycle::get_front_triangle_dims()]
 #' @seealso [bicycle::get_rear_triangle_dims()]
 #'
-#' @return A 6 x 3 tibble.
+#' @return A 7 x 3 tibble.
 #' @export
 #'
 #' @examples

@@ -27,7 +27,7 @@ get_front_triangle_dims(
 \item{st_dt_angle}{Angle between the seat tube and the down tube, in degrees.}
 }
 \value{
-A 3 x 4 tibble.
+A 3 x 5 tibble.
 }
 \description{
 The front triangle is a misnomer, because it's a quadrilateral made up
@@ -44,10 +44,20 @@ The angle between the seat tube and the downtube (\code{st_dt_angle}) is
 pre-determined in lugged frame construction by how the bottom bracket
 shell was cast. With these six dimensions in hand we can get the full
 set of dimensions that describe the front triangle. This function
-returns them as a tibble of four columns, one for each tube, and three
-rows. Each tube is described as a right triangle made up of the
-tube length as the hypotenuse and the tube's horizontal and vertical
-projections as the legs. The elements on each row are named accordingly.
+returns them as a tibble of five columns and three rows. Each tube is
+described as a right triangle made up of the tube length as the hypotenuse
+and the tube's horizontal and vertical projections as the legs. The elements
+on each row are named accordingly. Why five columns for four tubes?
+
+The fifth column, ett_triangle, helps calculate the effective top tube length
+when the top tube is slanted. For slanted top tubes the effective length is
+the horizontal distance between the front of the top tube and an imaginary
+extension of the seat tube equal to the vertical projection of the top tube
+times the sine of the seat tube angle in radians. In other words, this
+horizontal distance is equal to the horizontal projection of the top tube
+plus the vertical projection of the top tube times the tangent of the seat
+tube angle in radians. The second term of this addition is the third
+element of the ett_triangle vector.
 }
 \examples{
 get_front_triangle_dims()

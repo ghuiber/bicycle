@@ -139,10 +139,15 @@ Here's an example:
 
 ```{r show_frame_example_anchored_at_rear_do, fig.show='asis', fig.asp = 1, fig.width = 4}
 df_slantsix %>% 
-  draw_the_bicycle()
+  draw_the_bicycle() %>% 
+  add_the_ett_to_the_drawing(df_slantsix)
 ```
 
 Each of the 6 tubes shown above could have been drawn as a right triangle with the length (shown on the first row of `df_slantsix`) as the hypotenuse and its vertical and horizontal projections (shown on the second and third rows respectively) as the legs, but that would have made for unnecessary clutter. The elements of each column in `df_slantsix` are named because the plotting functions rely on the names for drawing things correctly. You can use the names to recover any of these dimensions for any reason.
+
+The triangle at the top of the top tube, described by the faint horizontal line and the faint extension to the seat tube, is there to help visualize the _effective_ top tube length. In a classic frame, where the top tube is perfectly horizontal, the actual length is the same as the effective length. Sizing such a frame is a simple matter of making sure that you can straddle the top tube without hitting it with your feet on the ground, and that you get adequate reach while riding seated -- your elbows are slightly bent, and you are not forcing your hands to carry too much of your body weight. Reach is well approximated by the actual length of the top tube. 
+
+With slant top tubes reach is better gauged by the effective length, not the actual length. The ability to plot it as a faint horizontal line should be useful for comparing the expected frame fit between frames with different top tube angles.
 
 # Adding a fork
 
@@ -215,7 +220,7 @@ goods$data %>%
 
 These lengths are represented graphically here:
 
-```{r show_final_picture, fig.show='asis', fig.asp = 1, fig.width = 4}
+```{r show_final_picture, fig.show='asis', fig.asp = 1, fig.width = 5}
 print(goods$picture)
 ```
 
@@ -287,7 +292,8 @@ compare_two_bikes <- function(bicycles_df,
   # wrap all the things again:
   wrap_the_bike_frame <- function(p, df, wheel_diameter, alpha_factor, i, c) {
     p %>%
-      overlay_the_bicycle(df, wheel_diameter, i, c, alpha_factor) %>%
+      overlay_the_bicycle(df, wheel_diameter, i, c, alpha_factor) %>% 
+      add_the_ett_to_the_drawing(df, wheel_diameter, i, c, alpha_factor) %>%
       add_the_steering_axis_to_the_drawing(df, wheel_diameter, i, c, alpha_factor) %>%
       add_the_fork_rake_to_the_drawing(df, wheel_diameter, i, c, alpha_factor) %>%
       draw_the_true_fork(df, wheel_diameter, i, c, alpha_factor) %>%
@@ -318,6 +324,6 @@ compare_two_bikes <- function(bicycles_df,
 
 Now let's compare them:
 
-```{r compare_them}
+```{r compare_them, fig.show='asis', fig.asp = 1, fig.width = 5}
 print(compare_two_bikes(bicycles))
 ```
