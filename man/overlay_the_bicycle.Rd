@@ -8,7 +8,6 @@ overlay_the_bicycle(
   x,
   df,
   wheel_diameter = 622,
-  i = 350,
   c = I("black"),
   alpha_factor = 1
 )
@@ -26,8 +25,6 @@ or the one augmented by \code{\link[=find_ht_extension_and_add_true_fork]{find_h
 of a 700c wheel. To see the effect of the tire width, add 2 x tire width in millimeters
 -- i.e. specify \code{wheel_diameter = 622 + 2 * 32} for a 32 mm tire.}
 
-\item{i}{The offset from x = 0, so the frame fits nicely in the first quadrant.}
-
 \item{c}{The color of the line segments.}
 
 \item{alpha_factor}{The transparency of the line segments, \code{alpha}.}
@@ -36,24 +33,11 @@ of a 700c wheel. To see the effect of the tire width, add 2 x tire width in mill
 A ggplot object.
 }
 \description{
-The front triangle is a misnomer, because it's a quadrilateral made up
-by four tubes: the seat tube ST, top tube TT, head tube HT and down tube DT.
-Between these tubes there are four angles, and they must add up to 360 degrees.
-A bike frame designer aims for a top tube length (\code{tt_length}) and
-seat tube length (\code{st_length}) that fit a rider of a given height and
-torso length, and also for a seat tube angle (\code{st_angle}) head
-tube angle (\code{ht_angle}) and top tube angle (\code{tt_angle}) that give
-the bike its desired riding characteristics.
-}
-\details{
-The angle between the seat tube and the downtube (\code{st_dt_angle}) is
-pre-determined in lugged frame construction by how the bottom bracket
-shell was cast. With these six dimensions in hand we can get the full
-set of dimensions that describe the front triangle. This function
-returns them as a tibble of four columns, one for each tube, and three
-rows. Each tube is described as a right triangle made up of the
-tube length as the hypotenuse and the tube's horizontal and vertical
-projections as the legs. The elements on each row are named accordingly.
+The bicycle frame is anchored on the plot at the rear dropout. Imagine it
+standing on the floor with the rear wheel against the wall. If the floor is
+the x axis and the wall is the y axis, then the (x, y) coordinates of the
+rear dropout are (x = wheel diameter / 2, y = wheel diameter / 2). That
+is the first point we draw and everything else is in reference to it.
 }
 \seealso{
 \code{\link[ggplot2:ggplot]{ggplot2::ggplot()}}

@@ -123,7 +123,6 @@ big_bicycle <- function(st_length = 500,
                         fork_rake = 45,
                         fork_cta_length = 390,
                         wheel_diameter = 622,
-                        i = 350,
                         c = I('black'),
                         alpha_factor = 1,
                         bb_shell_diameter = 34.8,
@@ -145,33 +144,27 @@ big_bicycle <- function(st_length = 500,
   pic <- df %>%
     draw_the_bicycle(wheel_diameter = wheel_diameter,
                      alpha_factor = alpha_factor,
-                     i = i,
                      c = c) %>%
     add_the_steering_axis_to_the_drawing(df,
                                          wheel_diameter = wheel_diameter,
                                          alpha_factor = alpha_factor,
-                                         i = i,
                                          c = c) %>%
     add_the_fork_rake_to_the_drawing(df,
                                      wheel_diameter = wheel_diameter,
                                      alpha_factor = alpha_factor,
-                                     i = i,
                                      c = c) %>%
     draw_the_true_fork(df,
                        wheel_diameter = wheel_diameter,
                        alpha_factor = alpha_factor,
-                       i = i,
                        c = c) %>%
     add_the_fork_trail(df,
                        wheel_diameter = wheel_diameter,
                        alpha_factor = alpha_factor,
-                       i = i,
                        c = c) %>%
     add_the_wheels(df,
                    bb_shell_diameter = bb_shell_diameter,
                    wheel_diameter = wheel_diameter,
                    alpha_factor = alpha_factor,
-                   i = i,
                    c = c)
 
   metrics <- df %>%

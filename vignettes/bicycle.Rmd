@@ -256,9 +256,8 @@ bicycles <- tibble::tibble(df = list(slantsix = wrap_frame_dims(st_length = 460,
                                        find_ht_extension_and_add_true_fork(fork_rake = 45))) %>% 
   tibble::add_column(wheel_diameter = c(622 + (20 * 2), 
                                         622 + 30 *2), 
-                     i = 350, 
                      c = names(.$df)) %>% 
-  dplyr::mutate_at(.vars = c('wheel_diameter', 'i', 'c'), 
+  dplyr::mutate_at(.vars = c('wheel_diameter', 'c'), 
                    .funs = function(x) {names(x) <- names(.$df); x}) %>% 
   tibble::add_column(metrics = purrr::pmap(.l = list(x = .$df, y = .$wheel_diameter), 
                                            .f = function(x, y) {
@@ -283,21 +282,21 @@ compare_two_bikes <- function(bicycles_df,
   # add the the rear dropout:
   add_do <- function(p, j) {
     p + 
-      geom_point(aes(x = i[j], 
+      geom_point(aes(x = wheel_diameter[j]/2, 
                      y = wheel_diameter[j]/2, 
                      colour = c[j]), 
                  alpha = .5 * alpha_factor)
   }
   
   # wrap all the things again:
-  wrap_the_bike_frame <- function(p, df, wheel_diameter, alpha_factor, i, c) {
+  wrap_the_bike_frame <- function(p, df, wheel_diameter, alpha_factor, c) {
     p %>%
-      overlay_the_bicycle(df, wheel_diameter, i, c, alpha_factor) %>% 
-      add_the_ett_to_the_drawing(df, wheel_diameter, i, c, alpha_factor) %>%
-      add_the_steering_axis_to_the_drawing(df, wheel_diameter, i, c, alpha_factor) %>%
-      add_the_fork_rake_to_the_drawing(df, wheel_diameter, i, c, alpha_factor) %>%
-      draw_the_true_fork(df, wheel_diameter, i, c, alpha_factor) %>%
-      add_the_fork_trail(df, wheel_diameter, i, c, alpha_factor)
+      overlay_the_bicycle(df, wheel_diameter, c, alpha_factor) %>% 
+      add_the_ett_to_the_drawing(df, wheel_diameter, c, alpha_factor) %>%
+      add_the_steering_axis_to_the_drawing(df, wheel_diameter, c, alpha_factor) %>%
+      add_the_fork_rake_to_the_drawing(df, wheel_diameter, c, alpha_factor) %>%
+      draw_the_true_fork(df, wheel_diameter, c, alpha_factor) %>%
+      add_the_fork_trail(df, wheel_diameter, c, alpha_factor)
   }
   
   p <- add_do(p, bike_pair[1])
@@ -305,12 +304,10 @@ compare_two_bikes <- function(bicycles_df,
   p <- p %>% 
     wrap_the_bike_frame(bicycles_df$df[[bike_pair[1]]], 
                         wheel_diameter = bicycles_df$wheel_diameter[bike_pair[1]], 
-                        i = bicycles_df$i[bike_pair[1]], 
                         c = bicycles_df$c[bike_pair[1]], 
                         alpha_factor = alpha_factor) %>% 
     wrap_the_bike_frame(bicycles_df$df[[bike_pair[2]]], 
                         wheel_diameter = bicycles_df$wheel_diameter[bike_pair[2]], 
-                        i = bicycles_df$i[bike_pair[2]], 
                         c = bicycles_df$c[bike_pair[2]], 
                         alpha_factor = alpha_factor)
   

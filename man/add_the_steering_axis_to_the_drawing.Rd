@@ -8,7 +8,6 @@ add_the_steering_axis_to_the_drawing(
   x,
   df,
   wheel_diameter = 622,
-  i = 350,
   c = I("black"),
   alpha_factor = 1
 )
@@ -25,8 +24,6 @@ or the one augmented by \code{\link[=find_ht_extension_and_add_true_fork]{find_h
 \item{wheel_diameter}{Wheel diameter in millimeters; 622 is the bead seat diameter
 of a 700c wheel. To see the effect of the tire width, add 2 x tire width in millimeters
 -- i.e. specify \code{wheel_diameter = 622 + 2 * 32} for a 32 mm tire.}
-
-\item{i}{The offset from x = 0, so the frame fits nicely in the first quadrant.}
 
 \item{c}{The color of the line segments.}
 

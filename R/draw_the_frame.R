@@ -1,22 +1,10 @@
 #' Overlay a new bicycle frame onto an existing plot
 #'
-#' The front triangle is a misnomer, because it's a quadrilateral made up
-#' by four tubes: the seat tube ST, top tube TT, head tube HT and down tube DT.
-#' Between these tubes there are four angles, and they must add up to 360 degrees.
-#' A bike frame designer aims for a top tube length (`tt_length`) and
-#' seat tube length (`st_length`) that fit a rider of a given height and
-#' torso length, and also for a seat tube angle (`st_angle`) head
-#' tube angle (`ht_angle`) and top tube angle (`tt_angle`) that give
-#' the bike its desired riding characteristics.
-#'
-#' The angle between the seat tube and the downtube (`st_dt_angle`) is
-#' pre-determined in lugged frame construction by how the bottom bracket
-#' shell was cast. With these six dimensions in hand we can get the full
-#' set of dimensions that describe the front triangle. This function
-#' returns them as a tibble of four columns, one for each tube, and three
-#' rows. Each tube is described as a right triangle made up of the
-#' tube length as the hypotenuse and the tube's horizontal and vertical
-#' projections as the legs. The elements on each row are named accordingly.
+#' The bicycle frame is anchored on the plot at the rear dropout. Imagine it
+#' standing on the floor with the rear wheel against the wall. If the floor is
+#' the x axis and the wall is the y axis, then the (x, y) coordinates of the
+#' rear dropout are (x = wheel diameter / 2, y = wheel diameter / 2). That
+#' is the first point we draw and everything else is in reference to it.
 #'
 #' @param x An existing ggplot object. At a minimum, it's a scatter plot of
 #' the rear dropout center. But it can be a bicycle frame of a previous design
@@ -27,7 +15,6 @@
 #' @param wheel_diameter Wheel diameter in millimeters; 622 is the bead seat diameter
 #' of a 700c wheel. To see the effect of the tire width, add 2 x tire width in millimeters
 #' -- i.e. specify `wheel_diameter = 622 + 2 * 32` for a 32 mm tire.
-#' @param i The offset from x = 0, so the frame fits nicely in the first quadrant.
 #' @param c The color of the line segments.
 #' @param alpha_factor The transparency of the line segments, `alpha`.
 #'
@@ -37,7 +24,6 @@
 overlay_the_bicycle <- function(x,
                                 df,
                                 wheel_diameter = 622,
-                                i = 350,
                                 c = I('black'),
                                 alpha_factor = 1) {
   # first, the easy parts: add the 3 tubes that
@@ -49,15 +35,15 @@ overlay_the_bicycle <- function(x,
   # projection (vp) of the tube of interest --
   # are parallel to the axes. so you draw the
   # tubes between the (x, y) coordinates of
-  # the projections shifted by i from x = 0
-  # and by wheel_diameter / 2 from y = 0
+  # the projections shifted by i from (0, 0)
+  i <- wheel_diameter/2
 
   # add the chain stay CS:
   cs_plot <- x +
     geom_segment(aes(x = i,
-                     y = wheel_diameter / 2,
+                     y = i,
                      xend = i + cs_triangle['horizontal_projection'],
-                     yend = wheel_diameter / 2 - cs_triangle['vertical_projection'],
+                     yend = i - cs_triangle['vertical_projection'],
                      colour = c),
                  alpha = alpha_factor,
                  data = df)
@@ -67,12 +53,12 @@ overlay_the_bicycle <- function(x,
     geom_segment(aes(x = i +
                        cs_triangle['horizontal_projection'] -
                        st_triangle['horizontal_projection'],
-                     y = wheel_diameter / 2 -
+                     y = i -
                        cs_triangle['vertical_projection'] +
                        st_triangle['vertical_projection'],
                      xend = i +
                        cs_triangle['horizontal_projection'],
-                     yend = wheel_diameter / 2 -
+                     yend = i -
                        cs_triangle['vertical_projection'],
                      colour = c),
                  alpha = alpha_factor,
@@ -83,11 +69,11 @@ overlay_the_bicycle <- function(x,
   # with a + sign, not to the left as with the CS and ST:
   dt_plot <- st_plot +
     geom_segment(aes(x = i + cs_triangle['horizontal_projection'],
-                     y = wheel_diameter / 2 - cs_triangle['vertical_projection'],
+                     y = i - cs_triangle['vertical_projection'],
                      xend = i +
                        cs_triangle['horizontal_projection'] +
                        dt_triangle['horizontal_projection'],
-                     yend = wheel_diameter / 2 -
+                     yend = i -
                        cs_triangle['vertical_projection'] +
                        dt_triangle['vertical_projection'],
                      colour = c),
@@ -108,10 +94,10 @@ overlay_the_bicycle <- function(x,
   # all is well and we got the SS length right.
   ss_plot <- dt_plot +
     geom_segment(aes(x = i,
-                     y = wheel_diameter / 2,
+                     y = i,
                      xend = i +
                        ss_triangle['horizontal_projection'],
-                     yend = wheel_diameter / 2 +
+                     yend = i +
                        ss_triangle['vertical_projection'],
                      colour = c),
                  alpha = alpha_factor,
@@ -122,14 +108,14 @@ overlay_the_bicycle <- function(x,
     geom_segment(aes(x = i +
                        cs_triangle['horizontal_projection'] -
                        st_triangle['horizontal_projection'],
-                     y = wheel_diameter / 2 -
+                     y = i -
                        cs_triangle['vertical_projection'] +
                        st_triangle['vertical_projection'],
                      xend = i +
                        cs_triangle['horizontal_projection'] -
                        st_triangle['horizontal_projection'] +
                        tt_triangle['horizontal_projection'],
-                     yend = wheel_diameter / 2 -
+                     yend = i -
                        cs_triangle['vertical_projection'] +
                        st_triangle['vertical_projection'] +
                        tt_triangle['vertical_projection'],
@@ -146,7 +132,7 @@ overlay_the_bicycle <- function(x,
                        cs_triangle['horizontal_projection'] -
                        st_triangle['horizontal_projection'] +
                        tt_triangle['horizontal_projection'],
-                     y = wheel_diameter / 2 -
+                     y = i -
                        cs_triangle['vertical_projection'] +
                        st_triangle['vertical_projection'] +
                        tt_triangle['vertical_projection'],
@@ -155,7 +141,7 @@ overlay_the_bicycle <- function(x,
                        st_triangle['horizontal_projection'] +
                        tt_triangle['horizontal_projection'] +
                        ht_triangle['horizontal_projection'],
-                     yend = wheel_diameter / 2 -
+                     yend = i -
                        cs_triangle['vertical_projection']+
                        st_triangle['vertical_projection'] +
                        tt_triangle['vertical_projection'] -
@@ -178,12 +164,12 @@ overlay_the_bicycle <- function(x,
 #' @export
 draw_the_bicycle <- function(df,
                              wheel_diameter = 622,
-                             i = 350,
                              c = I('black'),
                              alpha_factor = 1) {
   # start with the bottom bracket
+  i = wheel_diameter / 2
   do_center <- tibble::tibble(x = i,
-                              y = wheel_diameter / 2)
+                              y = i)
   do_plot <- do_center %>%
     ggplot(aes(x = x,
                y = y,
@@ -193,7 +179,6 @@ draw_the_bicycle <- function(df,
   do_plot %>%
     overlay_the_bicycle(df,
                         wheel_diameter,
-                        i,
                         c,
                         alpha_factor)
 }
@@ -213,23 +198,23 @@ draw_the_bicycle <- function(df,
 add_the_ett_to_the_drawing <- function(x,
                                        df,
                                        wheel_diameter = 622,
-                                       i = 350,
                                        c = I('black'),
                                        alpha_factor = 1) {
   # We start with the seat tube extension
+  i <- wheel_diameter / 2
   st_ext_plot <- x +
     geom_segment(aes(x = i +
                        cs_triangle['horizontal_projection'] -
                        st_triangle['horizontal_projection'] -
                        ett_triangle['horizontal_projection'],
-                     y = wheel_diameter / 2 -
+                     y = i -
                        cs_triangle['vertical_projection'] +
                        st_triangle['vertical_projection'] +
                        ett_triangle['vertical_projection'],
                      xend = i +
                        cs_triangle['horizontal_projection'] -
                        st_triangle['horizontal_projection'],
-                     yend = wheel_diameter / 2 -
+                     yend = i -
                        cs_triangle['vertical_projection'] +
                        st_triangle['vertical_projection'],
                      colour = c),
@@ -242,7 +227,7 @@ add_the_ett_to_the_drawing <- function(x,
                        cs_triangle['horizontal_projection'] -
                        st_triangle['horizontal_projection'] -
                        ett_triangle['horizontal_projection'],
-                     y = wheel_diameter / 2 -
+                     y = i -
                        cs_triangle['vertical_projection'] +
                        st_triangle['vertical_projection'] +
                        ett_triangle['vertical_projection'],
@@ -250,7 +235,7 @@ add_the_ett_to_the_drawing <- function(x,
                        cs_triangle['horizontal_projection'] -
                        st_triangle['horizontal_projection'] +
                        tt_triangle['horizontal_projection'],
-                     yend = wheel_diameter / 2 -
+                     yend = i -
                        cs_triangle['vertical_projection'] +
                        st_triangle['vertical_projection'] +
                        tt_triangle['vertical_projection'],
@@ -276,25 +261,25 @@ add_the_ett_to_the_drawing <- function(x,
 add_the_steering_axis_to_the_drawing <- function(x,
                                                  df,
                                                  wheel_diameter = 622,
-                                                 i = 350,
                                                  c = I('black'),
                                                  alpha_factor = 1) {
   # We start at the bottom of the head tube HT
   # (same as the top of the down tube DT, easier)
   # and draw the steering axis down to the height
   # of the dropouts first.
+  i <- wheel_diameter / 2
   sa_check <- x +
     geom_segment(aes(x = i +
                        cs_triangle['horizontal_projection'] +
                        dt_triangle['horizontal_projection'],
-                     y = wheel_diameter / 2 -
+                     y = i -
                        cs_triangle['vertical_projection'] +
                        dt_triangle['vertical_projection'],
                      xend = i +
                        cs_triangle['horizontal_projection'] +
                        dt_triangle['horizontal_projection'] +
                        sa_triangle['horizontal_projection'],
-                     yend = wheel_diameter / 2 -
+                     yend = i -
                        cs_triangle['vertical_projection'] +
                        dt_triangle['vertical_projection'] -
                        sa_triangle['vertical_projection'],
@@ -308,13 +293,13 @@ add_the_steering_axis_to_the_drawing <- function(x,
                        cs_triangle['horizontal_projection'] +
                        dt_triangle['horizontal_projection'] +
                        sa_triangle['horizontal_projection'],
-                     y = wheel_diameter / 2,
+                     y = i,
                      xend = i +
                        cs_triangle['horizontal_projection'] +
                        dt_triangle['horizontal_projection'] +
                        sa_triangle['horizontal_projection'] +
                        sa_ext_triangle['horizontal_projection'],
-                     yend = wheel_diameter / 2 -
+                     yend = i -
                        sa_ext_triangle['vertical_projection'],
                      colour = c),
                  alpha = 0.1 * alpha_factor,
@@ -337,18 +322,18 @@ add_the_steering_axis_to_the_drawing <- function(x,
 add_the_fork_rake_to_the_drawing <- function(x,
                                              df,
                                              wheel_diameter = 622,
-                                             i = 350,
                                              c = I('black'),
                                              alpha_factor = 1) {
   # first, add the rake leg of the right triangle
   # whose long leg is the extended steering axis
+  i <- wheel_diameter / 2
   rake <- x +
     geom_segment(aes(x = i +
                        cs_triangle['horizontal_projection'] +
                        dt_triangle['horizontal_projection'] +
                        sa_triangle['horizontal_projection'] +
                        sa_ext_triangle['horizontal_projection'],
-                     y = wheel_diameter / 2 -
+                     y = i -
                        sa_ext_triangle['vertical_projection'],
                      xend = i +
                        cs_triangle['horizontal_projection'] +
@@ -356,7 +341,7 @@ add_the_fork_rake_to_the_drawing <- function(x,
                        sa_triangle['horizontal_projection'] +
                        sa_ext_triangle['horizontal_projection'] +
                        rake_triangle['horizontal_projection'],
-                     yend = wheel_diameter / 2,
+                     yend = i,
                      colour = c),
                  alpha = 0.1 * alpha_factor,
                  data = df)
@@ -372,14 +357,14 @@ add_the_fork_rake_to_the_drawing <- function(x,
     geom_segment(aes(x = i +
                        cs_triangle['horizontal_projection'] +
                        dt_triangle['horizontal_projection'],
-                     y = wheel_diameter / 2 -
+                     y = i -
                        cs_triangle['vertical_projection'] +
                        dt_triangle['vertical_projection'],
                      xend = i +
                        cs_triangle['horizontal_projection'] +
                        dt_triangle['horizontal_projection'] +
                        af_triangle['horizontal_projection'],
-                     yend = wheel_diameter / 2 -
+                     yend = i -
                        cs_triangle['vertical_projection'] +
                        dt_triangle['vertical_projection'] -
                        af_triangle['vertical_projection'],
@@ -405,22 +390,22 @@ add_the_fork_rake_to_the_drawing <- function(x,
 draw_the_true_fork <- function(x,
                                df,
                                wheel_diameter = 622,
-                               i = 350,
                                c = I('black'),
                                alpha_factor = 1) {
   # we'll first draw the HT extension, then the real fork
+  i <- wheel_diameter / 2
   x +
     geom_segment(aes(x = i +
                        cs_triangle['horizontal_projection'] +
                        dt_triangle['horizontal_projection'],
-                     y = wheel_diameter / 2 -
+                     y = i -
                        cs_triangle['vertical_projection'] +
                        dt_triangle['vertical_projection'],
                      xend = i +
                        cs_triangle['horizontal_projection'] +
                        dt_triangle['horizontal_projection'] +
                        ht_ext_triangle['horizontal_projection'],
-                     yend = wheel_diameter / 2 -
+                     yend = i -
                        cs_triangle['vertical_projection'] +
                        dt_triangle['vertical_projection'] -
                        ht_ext_triangle['vertical_projection'],
@@ -431,7 +416,7 @@ draw_the_true_fork <- function(x,
                        cs_triangle['horizontal_projection'] +
                        dt_triangle['horizontal_projection'] +
                        ht_ext_triangle['horizontal_projection'],
-                     y = wheel_diameter / 2 -
+                     y = i -
                        cs_triangle['vertical_projection'] +
                        dt_triangle['vertical_projection'] -
                        ht_ext_triangle['vertical_projection'],
@@ -440,7 +425,7 @@ draw_the_true_fork <- function(x,
                        dt_triangle['horizontal_projection'] +
                        ht_ext_triangle['horizontal_projection'] +
                        f_triangle['horizontal_projection'],
-                     yend = wheel_diameter / 2 -
+                     yend = i -
                        cs_triangle['vertical_projection'] +
                        dt_triangle['vertical_projection'] -
                        ht_ext_triangle['vertical_projection'] -
@@ -471,23 +456,23 @@ add_the_wheels <- function(x,
                            df,
                            bb_shell_diameter = 34.8,
                            wheel_diameter = 622,
-                           i = 350,
                            c = I('black'),
                            alpha_factor = 1) {
+  i <- wheel_diameter / 2
   bb_circle <- tibble(x = i +
                         df$cs_triangle[['horizontal_projection']],
-                      y = wheel_diameter / 2 -
+                      y = i -
                         df$cs_triangle[['vertical_projection']],
                       r = bb_shell_diameter/2)
   rear_wheel <- tibble(x = i,
-                       y = wheel_diameter / 2,
-                       r = wheel_diameter/2)
+                       y = i,
+                       r = i)
   front_wheel <- tibble(x = i +
                           df$cs_triangle[['horizontal_projection']] +
                           df$dt_triangle[['horizontal_projection']] +
                           df$f_triangle[['horizontal_projection']],
-                        y = wheel_diameter / 2,
-                        r = wheel_diameter/2)
+                        y = i,
+                        r = i)
 
   # alpha here won't matter. geom_circle will draw
   # the wheels black for now, but maybe a future
@@ -532,19 +517,19 @@ add_the_wheels <- function(x,
 add_the_fork_trail <- function(x,
                                df,
                                wheel_diameter = 622,
-                               i = 350,
                                c = I('black'),
                                alpha_factor = 1) {
+  i <- wheel_diameter / 2
   # recover the HT angle:
   ht_hp <- df$ht_triangle[['horizontal_projection']]
   ht_vp <- df$ht_triangle[['vertical_projection']]
   ht_angle <- 90 - atan(ht_hp/ht_vp)*180/pi
 
   # extend the steering axis
-  h <- wheel_diameter / 2
+  h <- i
   sa_vp <- df$sa_triangle['vertical_projection']
   sa_hp <- df$sa_triangle['horizontal_projection']
-  rake_point_y <- wheel_diameter / 2 -
+  rake_point_y <- i -
     df$rake_triangle['vertical_projection']
   rake_point_x <- i +
     df$cs_triangle['horizontal_projection'] +
@@ -552,7 +537,7 @@ add_the_fork_trail <- function(x,
     df$sa_triangle['horizontal_projection'] +
     df$sa_ext_triangle['horizontal_projection']
 
-  leg_1 <- (wheel_diameter / 2 + df$rake_triangle['vertical_projection'])
+  leg_1 <- (i + df$rake_triangle['vertical_projection'])
   leg_2 <- leg_1 / tan(ht_angle * pi / 180)
 
   # 1. draw a vertical line from the fork DO to the ground
@@ -561,7 +546,7 @@ add_the_fork_trail <- function(x,
                        cs_triangle['horizontal_projection'] +
                        dt_triangle['horizontal_projection'] +
                        af_triangle['horizontal_projection'],
-                     y = wheel_diameter / 2,
+                     y = i,
                      xend = i +
                        cs_triangle['horizontal_projection'] +
                        dt_triangle['horizontal_projection'] +
