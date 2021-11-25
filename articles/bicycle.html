@@ -348,7 +348,7 @@
 <div id="welded-frames" class="section level2">
 <h2 class="hasAnchor">
 <a href="#welded-frames" class="anchor"></a>Welded frames</h2>
-<p>In a lugged frame the top of the head tube is where the top of the TT-HT lug ring is. The top of the seat tube is where the top of the ST-TT lug is. By contrast, in welded frames you have some discretion. Though the full length of the head tube is derived, how much of it you set aside for extending it above the point where the TT meets it is up to you. The same goes for the seat tube. How much height you add to the head tube matters because it affects the frame reach calculation. Let’s pretend that we want to the head tube to extend 20 mm above the center of the top tube joint:</p>
+<p>In a lugged frame the top of the head tube is where the top of the TT-HT lug ring is. The top of the seat tube is where the top of the ST-TT lug is. By contrast, in welded frames you have some discretion. Though the full length of the head tube is derived, how much of it you set aside for extending it above the point where the TT meets it is up to you. The same goes for the seat tube. How much height you add to the head tube matters because it affects the frame reach calculation. Let’s pretend that we want the head tube to extend 20 mm above the center of the top tube joint:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">df_slantsix</span> <span class="op">&lt;-</span> <span class="va">df_slantsix</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html">%&gt;%</a></span> 
   <span class="fu"><a href="../reference/add_tube_extension.html">add_tube_extension</a></span><span class="op">(</span>tube <span class="op">=</span> <span class="st">'ht_triangle'</span>, t_extension <span class="op">=</span> <span class="fl">20</span><span class="op">)</span></code></pre></div>
@@ -474,11 +474,11 @@
 <td align="right">500</td>
 </tr>
 <tr class="odd">
-<td align="left">Frame stack.vertical_projection</td>
+<td align="left">Frame stack</td>
 <td align="right">473</td>
 </tr>
 <tr class="even">
-<td align="left">Frame reach.horizontal_projection</td>
+<td align="left">Frame reach</td>
 <td align="right">337</td>
 </tr>
 </tbody>
