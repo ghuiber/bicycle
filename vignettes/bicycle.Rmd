@@ -166,7 +166,7 @@ df_slantsix %>%
 
 ## Welded frames
 
-In a lugged frame the top of the head tube is where the top of the TT-HT lug ring is. The top of the seat tube is where the top of the ST-TT lug is. By contrast, in welded frames you have some discretion. Though the full length of the head tube is derived, how much of it you set aside for extending it above the point where the TT meets it is up to you. The same goes for the seat tube. How much height you add to the head tube matters because it affects the frame reach calculation. Let's pretend that we want to the head tube to extend 20 mm above the center of the top tube joint: 
+In a lugged frame the top of the head tube is where the top of the TT-HT lug ring is. The top of the seat tube is where the top of the ST-TT lug is. By contrast, in welded frames you have some discretion. Though the full length of the head tube is derived, how much of it you set aside for extending it above the point where the TT meets it is up to you. The same goes for the seat tube. How much height you add to the head tube matters because it affects the frame reach calculation. Let's pretend that we want the head tube to extend 20 mm above the center of the top tube joint: 
 
 ```{r add_ht_extension}
 df_slantsix <- df_slantsix %>% 

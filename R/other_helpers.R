@@ -101,15 +101,15 @@ get_all_the_metrics <- function(df,
   # handlebar stack and reach: add the vertical height of the complete stem assembly to the
   # frame stack, and its length to the frame reach. both are adjustable at the bike fit
   # stage, so neither is a concern here.
-  frame_stack <- df$dt_triangle['vertical_projection'] +
-    df$ht_triangle['vertical_projection']
+  frame_stack <- df$dt_triangle[['vertical_projection']] +
+    df$ht_triangle[['vertical_projection']]
   if('tht_triangle' %in% names(df)) {
-    frame_stack <- frame_stack + df$tht_triangle['vertical_projection']
+    frame_stack <- frame_stack + df$tht_triangle[['vertical_projection']]
   }
-  frame_reach <- df$dt_triangle['horizontal_projection'] -
-    df$ht_triangle['horizontal_projection']
+  frame_reach <- df$dt_triangle[['horizontal_projection']] -
+    df$ht_triangle[['horizontal_projection']]
   if('tht_triangle' %in% names(df)) {
-    frame_reach <- frame_reach - df$tht_triangle['horizontal_projection']
+    frame_reach <- frame_reach - df$tht_triangle[['horizontal_projection']]
   }
 
   # return the goods
