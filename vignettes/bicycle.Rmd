@@ -160,7 +160,17 @@ Here are the dimensions we need for drawing up the frame with the fork included:
 ```{r collect_all_the_dims}
 df_slantsix <- df_slantsix %>% 
   find_ht_extension_and_add_true_fork()
-df_slantsix %>% knitr::kable(digits = 0)
+df_slantsix %>% 
+  knitr::kable(digits = 0)
+```
+
+## Welded frames
+
+In a lugged frame the top of the head tube is where the top of the TT-HT lug ring is. The top of the seat tube is where the top of the ST-TT lug is. By contrast, in welded frames you have some discretion. Though the full length of the head tube is derived, how much of it you set aside for extending it above the point where the TT meets it is up to you. The same goes for the seat tube. How much height you add to the head tube matters because it affects the frame reach calculation. Let's pretend that we want to the head tube to extend 20 mm above the center of the top tube joint: 
+
+```{r add_ht_extension}
+df_slantsix <- df_slantsix %>% 
+  add_tube_extension(tube = 'ht_triangle', t_extension = 20)
 ```
 
 ## Completing the picture
@@ -174,6 +184,7 @@ df_slantsix %>%
   draw_the_true_fork(df_slantsix) %>% 
   add_the_wheels(df_slantsix) %>% 
   add_the_fork_trail(df_slantsix) %>% 
+  add_the_tube_extensions_to_the_drawing(df_slantsix) %>% 
   print()
 ```
 

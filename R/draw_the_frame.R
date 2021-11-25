@@ -589,3 +589,69 @@ add_the_fork_trail <- function(x,
                      leg_2) - df$af_triangle['horizontal_projection']
   ground
 }
+
+#' Add any tube extensions to the frame drawing
+#'
+#' If this is a welded frame, you can set the difference between
+#' the top of the head tube and the point where the top tube joins
+#' the head tube (measured center-to-center). You can also set the
+#' difference between the top of the seat tube and the center of
+#' the point where the top tube meets the seat tube. Both of these
+#' differences are "tube extensions" that, if set, can be drawn.
+#'
+#' A complete `df` tibble as drawn by [bicycle::wrap_frame_dims()]
+#' is necessary. If it contains no tube extensions, the `x` ggplot
+#' object will be returned unchanged.
+#'
+#' @inheritParams overlay_the_bicycle
+#'
+#' @return A ggplot object.
+#' @seealso [ggplot2::ggplot()]
+#' @export
+add_the_tube_extensions_to_the_drawing <- function(x,
+                                                   df,
+                                                   wheel_diameter = 622,
+                                                   c = I('black'),
+                                                   alpha_factor = 1) {
+  tube_extensions <- intersect(names(df), c('tht_triangle', 'tst_triangle'))
+  # If there's nothing to draw, exit here:
+  if(length(tube_extensions) == 0) return(x)
+  # `tube` is a string: one of the elements of tube_extensions
+  # but with the first character dropped, so `ht_triangle` for `tht_triangle`
+  draw_tube_extension <- function(tube) {
+    i <- wheel_diameter / 2
+    ttube <- paste0('t', tube)
+    if(!(ttube %in% names(df))) return(x)
+    x_y <- list(st_triangle = c(x = i +
+                                  df$cs_triangle[['horizontal_projection']] -
+                                  df$st_triangle[['horizontal_projection']],
+                                y = i -
+                                  df$cs_triangle[['vertical_projection']] +
+                                  df$st_triangle[['vertical_projection']]),
+                ht_triangle = c(x = i +
+                                  df$cs_triangle[['horizontal_projection']] -
+                                  df$st_triangle[['horizontal_projection']] +
+                                  df$tt_triangle[['horizontal_projection']],
+                                y = i -
+                                  df$cs_triangle[['vertical_projection']] +
+                                  df$dt_triangle[['vertical_projection']] +
+                                  df$ht_triangle[['vertical_projection']])) %>%
+      tibble::as_tibble()
+    x_y_end <- c(x = x_y[[tube]][['x']] - df[[ttube]][['horizontal_projection']],
+                 y = x_y[[tube]][['y']] + df[[ttube]][['vertical_projection']])
+    x_y <- x_y %>%
+      add_column(x_y_end = x_y_end)
+    x +
+      geom_segment(aes(x = .data[[tube]]['x'],
+                       y = .data[[tube]]['y'],
+                       xend = .data[['x_y_end']]['x'],
+                       yend = .data[['x_y_end']]['y'],
+                       colour = c),
+                   alpha = alpha_factor,
+                   data = x_y)
+
+  }
+   x <- draw_tube_extension('ht_triangle')
+   x <- draw_tube_extension('st_triangle')
+   x
+}

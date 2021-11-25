@@ -49,6 +49,14 @@ get_st_to_rear_tire_clearance <- function(df,
 #' Once you have a frame design `df` you can use this to derive
 #' some metrics that will help gauge the ride characteristics.
 #'
+#' Effective top tube length is measured from the center of the point
+#' where the top tube meets the head tube to the center of the seat post,
+#' which in the drawing rendered by [bicycle::add_the_ett_to_the_drawing()]
+#' looks like a faint line that continues the seat tube. An alternate way
+#' is to measure it from the top of the head tube to the center of the seat
+#' post. The two are the same if the head tube and the seat tube have the
+#' same angle, because they are just the long sides of a parallelogram.
+#'
 #' @inheritParams overlay_the_bicycle
 #' @inheritParams get_rear_triangle_dims
 #' @inheritParams get_cs_length
@@ -83,8 +91,26 @@ get_all_the_metrics <- function(df,
   fork_trail <- calculate_fork_trail(df, wheel_diameter)
   st_to_rear_tire_clearance <- get_st_to_rear_tire_clearance(df, wheel_diameter)
   bbsc_offset <- get_bbsc_offset(old_spacing, angle_btw_css, cs_length, bbs_width)
+
+
   ett_length <- df$tt_triangle[['horizontal_projection']] +
     df$ett_triangle[['horizontal_projection']]
+
+  # frame stack: the vertical distance between the top of the HT and the center of the BB.
+  # frame reach: the horizontal distance between the top of the HT and the center of the BB.
+  # handlebar stack and reach: add the vertical height of the complete stem assembly to the
+  # frame stack, and its length to the frame reach. both are adjustable at the bike fit
+  # stage, so neither is a concern here.
+  frame_stack <- df$dt_triangle['vertical_projection'] +
+    df$ht_triangle['vertical_projection']
+  if('tht_triangle' %in% names(df)) {
+    frame_stack <- frame_stack + df$tht_triangle['vertical_projection']
+  }
+  frame_reach <- df$dt_triangle['horizontal_projection'] -
+    df$ht_triangle['horizontal_projection']
+  if('tht_triangle' %in% names(df)) {
+    frame_reach <- frame_reach - df$tht_triangle['horizontal_projection']
+  }
 
   # return the goods
   c('Wheel base' = wheelbase,
@@ -94,7 +120,9 @@ get_all_the_metrics <- function(df,
     'Fork trail' = fork_trail,
     'Seat tube to rear tire clearance' = st_to_rear_tire_clearance,
     'BBSC offset' = bbsc_offset,
-    'Effective top tube length' = ett_length)
+    'Effective top tube length' = ett_length,
+    'Frame stack' = frame_stack,
+    'Frame reach' = frame_reach)
 }
 
 #' Get all the things

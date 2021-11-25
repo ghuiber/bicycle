@@ -36,3 +36,12 @@ A named vector
 Once you have a frame design \code{df} you can use this to derive
 some metrics that will help gauge the ride characteristics.
 }
+\details{
+Effective top tube length is measured from the center of the point
+where the top tube meets the head tube to the center of the seat post,
+which in the drawing rendered by \code{\link[=add_the_ett_to_the_drawing]{add_the_ett_to_the_drawing()}}
+looks like a faint line that continues the seat tube. An alternate way
+is to measure it from the top of the head tube to the center of the seat
+post. The two are the same if the head tube and the seat tube have the
+same angle, because they are just the long sides of a parallelogram.
+}
